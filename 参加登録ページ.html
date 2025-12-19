@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>🎀 Albion Bingo Login 🎀</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <style>
+    body{
+      font-family: system-ui;
+      background: linear-gradient(135deg,#fff0f6,#e0f7fa);
+      text-align:center;
+      padding:40px 16px;
+    }
+    h1{ color:#e67cb8; }
+    input{
+      font-size:18px;
+      padding:10px;
+      border-radius:8px;
+      border:1px solid #ccc;
+      width:240px;
+    }
+    .icons{
+      margin:16px 0;
+      display:flex;
+      justify-content:center;
+      gap:10px;
+      flex-wrap:wrap;
+    }
+    .icon{
+      font-size:32px;
+      cursor:pointer;
+      padding:10px;
+      border-radius:50%;
+      border:2px solid transparent;
+    }
+    .icon.selected{
+      border-color:#e67cb8;
+      background:#fff;
+    }
+    button{
+      margin-top:20px;
+      font-size:18px;
+      padding:12px 26px;
+      border:none;
+      border-radius:999px;
+      background:#f8a4c3;
+      color:white;
+      cursor:pointer;
+    }
+  </style>
+</head>
+<body>
+
+<h1>🎀 あるびおんビンゴ 🎀</h1>
+<p>お名前とアイコンを選んでね</p>
+
+<input id="name" placeholder="お名前">
+
+<div class="icons" id="icons">
+  <div class="icon">🎀</div>
+  <div class="icon">🐸</div>
+  <div class="icon">🐱</div>
+  <div class="icon">🦄</div>
+  <div class="icon">🍰</div>
+</div>
+
+<button onclick="goNext()">Let’s party night 🎉</button>
+
+<script>
+  let selectedIcon = null;
+
+  document.querySelectorAll(".icon").forEach(el=>{
+    el.onclick = ()=>{
+      document.querySelectorAll(".icon").forEach(i=>i.classList.remove("selected"));
+      el.classList.add("selected");
+      selectedIcon = el.textContent;
+    };
+  });
+
+  function goNext(){
+    const name = document.getElementById("name").value.trim();
+    if(!name || !selectedIcon){
+      alert("名前とアイコンを選んでね！");
+      return;
+    }
+    localStorage.setItem("albion_bingo_name", name);
+    localStorage.setItem("albion_bingo_icon", selectedIcon);
+    location.href = "bingo.html";
+  }
+</script>
+
+</body>
+</html>
