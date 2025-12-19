@@ -177,7 +177,7 @@
     } 
 
     .anniv-image-wrap img{
-      max-width:200px;
+      max-width:180px;
     }
 
     .title-text{
@@ -202,23 +202,23 @@
     }
     }
   .guild-line{
-    font-size:14px;
-    font-weight:700;
-    margin-bottom:6px;
+    font: size 30px;
+    font-weight:600;
+    margin-bottom:8px;
     display:flex;
     align-items:center;
     justify-content:center;
-    gap:6px;
+    gap:8px;
   }
 
   /* 文字だけ装飾 */
   .guild-name{
-    padding:4px 10px;
+    padding:6px 14px;
     border-radius:999px;
     background:linear-gradient(135deg,#fff0f6,#ffe0ea);
     color:#ff5f9e;
-    box-shadow:0 2px 8px rgba(255,120,170,.35);
-    letter-spacing:.05em;
+    box-shadow:0 3px 10px rgba(255,120,170,.35);
+    letter-spacing:.06em;
   }
   /* 1st Anniversary バッジ風 */
   .anniv-badge{
@@ -246,6 +246,7 @@
     -webkit-background-clip:text;
     color:transparent;
     text-shadow:0 4px 14px rgba(255,120,170,.5);
+    
   }
 
   .jji{
@@ -261,7 +262,7 @@
   }
 
   .emoji{
-    font-size:24px;
+    font-size:30px;
     margin:0 2px;
   }
   /* Anniversary画像 */
@@ -270,8 +271,8 @@
   }
 
   .anniv-image-wrap img{
-    max-width:220px;
-    width:100%;
+    max-width:200px;
+    width:95%;
     height:auto;
     display:block;
     margin:0 auto;
@@ -285,15 +286,30 @@
   75% { transform: translateX(-4px); }
   100% { transform: translateX(0); }
 }
+@keyframes pop {
+  0%   { transform: scale(1); }
+  40%  { transform: scale(1.15); }
+  70%  { transform: scale(0.95); }
+  100% { transform: scale(1); }
+}
+
+.icon.pop{
+  animation: pop 0.25s ease;
+}
 .icons.shake{
   animation: shake 0.4s;
 }
 
   </style>
   </head>
-
   <body>
-  <div class="page-wrap">
+    <audio id="selectSound" preload="auto">
+  <source src="select.mp3" type="audio/mpeg">
+</audio>
+
+
+
+<div class="page-wrap">
     <div class="register-card">
 
   <h1 class="title">
@@ -307,9 +323,10 @@
       <img src="anniversary.png" alt="1st Anniversary">
     </div>  
 
+
     <div class="bingo-line">
       <span class="emoji">🎊</span>
-      <span class="bingo-text">年末ジャンボ!! BINGO</span>
+      <span class="bingo-text">年末ジャンボ BINGO祭</span>
       <span class="emoji">🎊</span>
     </div>
   </h1>
@@ -337,16 +354,23 @@
 
   <script>
   /* ===== アイコン選択 ===== */
-  const icons = document.querySelectorAll(".icon");
-  let selectedIcon = "";
+const icons = document.querySelectorAll(".icon");
+let selectedIcon = "";
+const selectSound = document.getElementById("selectSound");
 
-  icons.forEach(icon=>{
-    icon.addEventListener("click",()=>{
-      icons.forEach(i=>i.classList.remove("selected"));
-      icon.classList.add("selected");
-      selectedIcon = icon.textContent;
-    });
+icons.forEach(icon=>{
+  icon.addEventListener("click",()=>{
+    icons.forEach(i=>i.classList.remove("selected","pop"));
+    icon.classList.add("selected","pop");
+
+    selectedIcon = icon.textContent;
+
+    // 効果音
+    selectSound.currentTime = 0;
+    selectSound.play();
   });
+});
+
 
   /* ===== 画像プレビュー ===== */
   function previewImage(input){
