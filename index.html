@@ -11,7 +11,7 @@ body{
   margin:0;
   font-family:"Hiragino Kaku Gothic ProN", Meiryo, sans-serif;
   background-image:url("festival_bg.jpg");
-  background-position:center top;
+  background-position:center top; 
   background-repeat:no-repeat;
   background-size:cover;      /* ← 最重要 */
   min-height:100vh;
@@ -35,15 +35,19 @@ body{
   max-width:400px;
   width:100%;
   padding:32px 26px 36px;
-  background:linear-gradient(180deg,#fff,#fff6fa);
+
+  background:rgba(255, 255, 255, 0.68);   /* ← さらに透明 */
+  backdrop-filter: blur(4px);          /* ← 透明度上げた分、少し強め */
+  -webkit-backdrop-filter: blur(8px);  
+
   border-radius:30px;
   text-align:center;
   border:6px solid rgba(255,160,190,.55);
   box-shadow:
     0 25px 60px rgba(0,0,0,.35),
     0 0 0 10px rgba(255,180,205,.25);
-  padding-top: 28px;   /* ← ここを追加 or 微調整 */
 }
+
 /* ===== タイトル全体 ===== */
 .title{
   margin: 0 0 22px;
@@ -179,19 +183,20 @@ h1{
   }
 
 .icon{
-  width:56px;              /* ← 固定 */
-  height:56px;             /* ← 固定 */
-  font-size:32px;
+  width:52px;              /* ← 固定 */
+  height:52px;             /* ← 固定 */
+  font-size:30px;
   display:flex;
   align-items:center;
   justify-content:center;
   border-radius:50%;       /* ← 完全な円 */
   cursor:pointer;
   transition:.2s;
+  
 }
 }
 .guild-line{
-  font-size:15px;
+  font-size:14px;
   font-weight:700;
   margin-bottom:6px;
   display:flex;
