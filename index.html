@@ -1,365 +1,387 @@
-<!DOCTYPE html>
-<html lang="ja">
-<head>
-<meta charset="UTF-8">
-<title>🎉Sushi BINGO大会🎉</title>
-<meta name="viewport" content="width=device-width, initial-scale=1">
+  <!DOCTYPE html>
+  <html lang="ja">
+  <head>
+  <meta charset="UTF-8">
+  <title>🎉Sushi BINGO大会🎉</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
 
-<style>
-/* ===== 背景 ===== */
-body{
-  margin:0;
-  font-family:"Hiragino Kaku Gothic ProN", Meiryo, sans-serif;
-  background-image:url("festival_bg.jpg");
-  background-position:center top; 
-  background-repeat:no-repeat;
-  background-size:cover;      /* ← 最重要 */
-  min-height:100vh;
-}
-
-
-/* ===== レイアウト ===== */
-.page-wrap{
-  min-height:100vh;
-  display:flex;
-  justify-content:center;
-  align-items:flex-start;
-  padding:40px 12px 80px; /* ← 下に余白を追加 */
-  box-sizing:border-box;
-}
-
-/* ===== メインカード ===== */
-.register-card{
-  position:relative;
-  z-index:2;
-  max-width:360px;
-  width:92%;
-  padding:32px 26px 36px;
-
-  background:rgba(255, 255, 255, 0.68);   /* ← さらに透明 */
-  backdrop-filter: blur(4px);          /* ← 透明度上げた分、少し強め */
-  -webkit-backdrop-filter: blur(8px);  
-
-  border-radius:30px;
-  text-align:center;
-  border:6px solid rgba(255,160,190,.55);
-  box-shadow:
-    0 25px 60px rgba(0,0,0,.35),
-    0 0 0 10px rgba(255,180,205,.25);
-}
-
-/* ===== タイトル全体 ===== */
-.title{
-  margin: 0 0 22px;
-  padding: 0; 
-  line-height: 1.25;          /* ← これが重要 */
-  text-align: center;
-}
-
-/* 文字部分だけグラデ */
-.title-text{
-  display:inline-block;
-  font-size:25px;             /* 少しだけ抑える */
-  font-weight:700;
-  background:linear-gradient(135deg,#ff6fa7,#ffb347);
-  -webkit-background-clip:text;
-  color:transparent;
-  text-shadow:0 4px 14px rgba(255,120,170,.6);
-}
-
-/* 絵文字は普通に描画 */
-.title-emoji{
-  font-size:26px;
-  vertical-align:middle;
-  margin:0 2px;
-  text-shadow:none;
-}
+  <style>
+  /* ===== 背景 ===== */
+  body{
+    margin:0;
+    font-family:"Hiragino Kaku Gothic ProN", Meiryo, sans-serif;
+    background-image:url("festival_bg.jpg");
+    background-position:center top; 
+    background-repeat:no-repeat;
+    background-size:cover;      /* ← 最重要 */
+    min-height:100vh;
+  }
 
 
-/* ===== タイトル ===== */
-h1{
-  margin:0 0 20px;
-  line-height:1.35;
-}
-.h1-text{
-  font-size:26px;
-  letter-spacing:.05em;
-  background:linear-gradient(135deg,#ff6fa7,#ffb347);
-  -webkit-background-clip:text;
-  -webkit-text-fill-color:transparent;
-  color:#ff7aa2; /* 保険 */
-  text-shadow:0 2px 6px rgba(255,120,170,.45);
-}
+  /* ===== レイアウト ===== */
+  .page-wrap{
+    min-height:100vh;
+    display:flex;
+    justify-content:center;
+    align-items:flex-start;
+    padding:40px 12px 80px; /* ← 下に余白を追加 */
+    box-sizing:border-box;
+  }
 
-
-/* ===== 名前入力 ===== */
-#name{
-  width:100%;
-  padding:18px;
-  font-size:20px;
-  border-radius:16px;
-  border:3px solid #ffb3cc;
-  margin:20px 0 22px;
-  box-sizing:border-box;
-}
-#name:focus{
-  outline:none;
-  border-color:#ff6fa7;
-  box-shadow:0 0 0 4px rgba(255,140,180,.35);
-}
-
-/* ===== アイコン ===== */
-.icons{
-  display:flex;
-  justify-content:center;
-  gap:16px;
-  margin:14px 0;
-}
-.icon{
-  font-size:34px;
-  padding:10px;
-  border-radius:50%;
-  cursor:pointer;
-  transition:.2s;
-}
-.icon.selected{
- background:#fff;
-  box-shadow:
-    0 0 0 3px #ff8fab,
-    0 0 18px rgba(255,120,170,.9);
-}
-
-/* ===== アップロード ===== */
-.upload-btn{
-  display:inline-block;
-  margin:14px 0;
-  padding:10px 22px;
-  border-radius:999px;
-  border:2px dashed #ff9fba;
-  color:#ff6b9a;
-  background:#fff;
-  cursor:pointer;
-}
-.upload-btn input{display:none;}
-
-/* ===== プレビュー ===== */
-.preview{
-  display:flex;
-  justify-content:center;
-  margin:16px 0;
-}
-.preview img{
-  width:120px;
-  height:120px;
-  border-radius:50%;
-  border:4px solid #ff9fba;
-}
-
-/* ===== ボタン ===== */
-.submit-btn{
-  width:100%;
-  padding:16px;
-  font-size:18px;
-  border-radius:16px;
-  border:none;
-  background:linear-gradient(135deg,#ff8fb6,#ff5f9e);
-  color:white;
-  cursor:pointer;
-  position:relative;
-  z-index:10;
-}
-@media (max-width: 480px){
+  /* ===== メインカード ===== */
   .register-card{
-    max-height: calc(100vh - 120px); /* ← 上下に背景 */
-    overflow-y:auto;
-    padding:24px 18px 28px;
-    border-radius:24px;
-  } 
+    position:relative;
+    z-index:2;
+    max-width:360px;
+    width:92%;
+    padding:32px 26px 36px;
+
+    background:rgba(255, 255, 255, 0.68);   /* ← さらに透明 */
+    backdrop-filter: blur(4px);          /* ← 透明度上げた分、少し強め */
+    -webkit-backdrop-filter: blur(8px);  
+
+    border-radius:30px;
+    text-align:center;
+    border:6px solid rgba(255,160,190,.55);
+    box-shadow:
+      0 25px 60px rgba(0,0,0,.35),
+      0 0 0 10px rgba(255,180,205,.25);
+  }
+
+  /* ===== タイトル全体 ===== */
+  .title{
+    margin: 0 0 22px;
+    padding: 0; 
+    line-height: 1.25;          /* ← これが重要 */
+    text-align: center;
+  }
+
+  /* 文字部分だけグラデ */
+  .title-text{
+    display:inline-block;
+    font-size:25px;             /* 少しだけ抑える */
+    font-weight:700;
+    background:linear-gradient(135deg,#ff6fa7,#ffb347);
+    -webkit-background-clip:text;
+    color:transparent;
+    text-shadow:0 4px 14px rgba(255,120,170,.6);
+  }
+
+  /* 絵文字は普通に描画 */
+  .title-emoji{
+    font-size:26px;
+    vertical-align:middle;
+    margin:0 2px;
+    text-shadow:none;
+  }
+
+
+  /* ===== タイトル ===== */
+  h1{
+    margin:0 0 20px;
+    line-height:1.35;
+  }
+  .h1-text{
+    font-size:26px;
+    letter-spacing:.05em;
+    background:linear-gradient(135deg,#ff6fa7,#ffb347);
+    -webkit-background-clip:text;
+    -webkit-text-fill-color:transparent;
+    color:#ff7aa2; /* 保険 */
+    text-shadow:0 2px 6px rgba(255,120,170,.45);
+  }
+
+
+  /* ===== 名前入力 ===== */
+  #name{
+    width:100%;
+    padding:18px;
+    font-size:20px;
+    border-radius:16px;
+    border:3px solid #ffb3cc;
+    margin:20px 0 22px;
+    box-sizing:border-box;
+  }
+  #name:focus{
+    outline:none;
+    border-color:#ff6fa7;
+    box-shadow:0 0 0 4px rgba(255,140,180,.35);
+  }
+
+  /* ===== アイコン ===== */
+  .icons{
+    display:flex;
+    justify-content:center;
+    gap:16px;
+    margin:14px 0;
+  }
+  .icon{
+    font-size:34px;
+    padding:10px;
+    border-radius:50%;
+    cursor:pointer;
+    transition:.2s;
+  }
+  .icon.selected{
+  background:#fff;
+    box-shadow:
+      0 0 0 3px #ff8fab,
+      0 0 18px rgba(255,120,170,.9);
+  }
+
+  /* ===== アップロード ===== */
+  .upload-btn{
+    display:inline-block;
+    margin:14px 0;
+    padding:10px 22px;
+    border-radius:999px;
+    border:2px dashed #ff9fba;
+    color:#ff6b9a;
+    background:#fff;
+    cursor:pointer;
+  }
+  .upload-btn input{display:none;}
+
+  /* ===== プレビュー ===== */
+  .preview{
+    display:flex;
+    justify-content:center;
+    margin:16px 0;
+  }
+  .preview img{
+    width:120px;
+    height:120px;
+    border-radius:50%;
+    border:4px solid #ff9fba;
+  }
+
+  /* ===== ボタン ===== */
+  .submit-btn{
+    width:100%;
+    padding:16px;
+    font-size:18px;
+    border-radius:16px;
+    border:none;
+    background:linear-gradient(135deg,#ff8fb6,#ff5f9e);
+    color:white;
+    cursor:pointer;
+    position:relative;
+    z-index:10;
+  }
+  @media (max-width: 480px){
+    .register-card{
+      max-height: calc(100vh - 120px); /* ← 上下に背景 */
+      overflow-y:auto;
+      padding:24px 18px 28px;
+      border-radius:24px;
+    } 
+
+    .anniv-image-wrap img{
+      max-width:200px;
+    }
+
+    .title-text{
+      font-size:22px;
+    }
+
+    .icon{
+    width:52px;              /* ← 固定 */
+    height:52px;             /* ← 固定 */
+    font-size:30px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    border-radius:50%;       /* ← 完全な円 */
+    cursor:pointer;
+    transition:.2s;
+    
+    }
+    .page-wrap{
+      padding-left:16px;
+      padding-right:16px;
+    }
+    }
+  .guild-line{
+    font-size:14px;
+    font-weight:700;
+    margin-bottom:6px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:6px;
+  }
+
+  /* 文字だけ装飾 */
+  .guild-name{
+    padding:4px 10px;
+    border-radius:999px;
+    background:linear-gradient(135deg,#fff0f6,#ffe0ea);
+    color:#ff5f9e;
+    box-shadow:0 2px 8px rgba(255,120,170,.35);
+    letter-spacing:.05em;
+  }
+  /* 1st Anniversary バッジ風 */
+  .anniv-badge{
+    display:inline-block;
+    margin:8px 0 14px;
+    padding:6px 18px;
+    font-size:18px;
+    font-weight:700;
+    color:#fff;
+    background:linear-gradient(135deg,#ff6fa7,#ffb347);
+    border-radius:999px;
+    box-shadow:0 6px 18px rgba(255,120,170,.6);
+    letter-spacing:.05em;
+  }
+
+  /* BINGO行 */
+  .bingo-line{
+    font-size:22px;
+    font-weight:700;
+    margin-top:8px;
+  }
+
+  .bingo-text{
+    background:linear-gradient(135deg,#ff6fa7,#ffb347);
+    -webkit-background-clip:text;
+    color:transparent;
+    text-shadow:0 4px 14px rgba(255,120,170,.5);
+  }
+
+  .jji{
+    font-size:24px;
+    margin:0 2px;
+  }
+
+  .bingo-text{
+    background:linear-gradient(135deg,#ff6fa7,#ffb347);
+    -webkit-background-clip:text;
+    color:transparent;
+    text-shadow:0 4px 14px rgba(255,120,170,.5);
+  }
+
+  .emoji{
+    font-size:24px;
+    margin:0 2px;
+  }
+  /* Anniversary画像 */
+  .anniv-image-wrap{
+    margin:6px 0 10px;     /* ← 余白調整 */
+  }
 
   .anniv-image-wrap img{
-    max-width:200px;
+    max-width:220px;
+    width:100%;
+    height:auto;
+    display:block;
+    margin:0 auto;
+    filter: drop-shadow(0 6px 18px rgba(0,0,0,.35));
   }
 
-  .title-text{
-    font-size:22px;
-  }
-
-  .icon{
-  width:52px;              /* ← 固定 */
-  height:52px;             /* ← 固定 */
-  font-size:30px;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  border-radius:50%;       /* ← 完全な円 */
-  cursor:pointer;
-  transition:.2s;
-  
-   }
-  .page-wrap{
-    padding-left:16px;
-    padding-right:16px;
-  }
-  }
-.guild-line{
-  font-size:14px;
-  font-weight:700;
-  margin-bottom:6px;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  gap:6px;
+  @keyframes shake {
+  0% { transform: translateX(0); }
+  25% { transform: translateX(-4px); }
+  50% { transform: translateX(4px); }
+  75% { transform: translateX(-4px); }
+  100% { transform: translateX(0); }
+}
+.icons.shake{
+  animation: shake 0.4s;
 }
 
-/* 文字だけ装飾 */
-.guild-name{
-  padding:4px 10px;
-  border-radius:999px;
-  background:linear-gradient(135deg,#fff0f6,#ffe0ea);
-  color:#ff5f9e;
-  box-shadow:0 2px 8px rgba(255,120,170,.35);
-  letter-spacing:.05em;
-}
-/* 1st Anniversary バッジ風 */
-.anniv-badge{
-  display:inline-block;
-  margin:8px 0 14px;
-  padding:6px 18px;
-  font-size:18px;
-  font-weight:700;
-  color:#fff;
-  background:linear-gradient(135deg,#ff6fa7,#ffb347);
-  border-radius:999px;
-  box-shadow:0 6px 18px rgba(255,120,170,.6);
-  letter-spacing:.05em;
-}
+  </style>
+  </head>
 
-/* BINGO行 */
-.bingo-line{
-  font-size:22px;
-  font-weight:700;
-  margin-top:8px;
-}
+  <body>
+  <div class="page-wrap">
+    <div class="register-card">
 
-.bingo-text{
-  background:linear-gradient(135deg,#ff6fa7,#ffb347);
-  -webkit-background-clip:text;
-  color:transparent;
-  text-shadow:0 4px 14px rgba(255,120,170,.5);
-}
-
-.jji{
-  font-size:24px;
-  margin:0 2px;
-}
-
-.bingo-text{
-  background:linear-gradient(135deg,#ff6fa7,#ffb347);
-  -webkit-background-clip:text;
-  color:transparent;
-  text-shadow:0 4px 14px rgba(255,120,170,.5);
-}
-
-.emoji{
-  font-size:24px;
-  margin:0 2px;
-}
-/* Anniversary画像 */
-.anniv-image-wrap{
-  margin:6px 0 10px;     /* ← 余白調整 */
-}
-
-.anniv-image-wrap img{
-  max-width:220px;
-  width:100%;
-  height:auto;
-  display:block;
-  margin:0 auto;
-  filter: drop-shadow(0 6px 18px rgba(0,0,0,.35));
-}
-</style>
-</head>
-
-<body>
-<div class="page-wrap">
-  <div class="register-card">
-
-<h1 class="title">
-  <div class="guild-line">
-    <span class="emoji">🍣</span>
-    <span class="guild-name">Sushi ギルド</span>
-    <span class="emoji">🍣</span>
-  </div>
-
-  <div class="anniv-image-wrap">
-    <img src="anniversary.png" alt="1st Anniversary">
-  </div>  
-
-  <div class="bingo-line">
-    <span class="emoji">🎊</span>
-    <span class="bingo-text">年末ジャンボ!! BINGO</span>
-    <span class="emoji">🎊</span>
-  </div>
-</h1>
-
-    <input id="name" type="text" placeholder="お名前">
-
-    <div class="icons">
-      <div class="icon">🎀</div>
-      <div class="icon">🍣</div>
-      <div class="icon">🐱</div>
-      <div class="icon">🐸</div>
+  <h1 class="title">
+    <div class="guild-line">
+      <span class="emoji">🍣</span>
+      <span class="guild-name">Sushi ギルド</span>
+      <span class="emoji">🍣</span>
     </div>
 
-    <label class="upload-btn">
-      📸 写真をえらぶ
-      <input type="file" accept="image/*" onchange="previewImage(this)">
-    </label>
+    <div class="anniv-image-wrap">
+      <img src="anniversary.png" alt="1st Anniversary">
+    </div>  
 
-    <div class="preview" id="preview"></div>
+    <div class="bingo-line">
+      <span class="emoji">🎊</span>
+      <span class="bingo-text">年末ジャンボ!! BINGO</span>
+      <span class="emoji">🎊</span>
+    </div>
+  </h1>
 
-    <button class="submit-btn" onclick="goNext()">参加する</button>
+      <input id="name" type="text" placeholder="お名前">
 
+      <div class="icons">
+        <div class="icon">🎀</div>
+        <div class="icon">🍣</div>
+        <div class="icon">🐱</div>
+        <div class="icon">🐸</div>
+      </div>
+
+      <label class="upload-btn">
+        📸 写真をえらぶ
+        <input type="file" accept="image/*" onchange="previewImage(this)">
+      </label>
+
+      <div class="preview" id="preview"></div>
+
+      <button class="submit-btn" onclick="goNext()">参加する</button>
+
+    </div>
   </div>
-</div>
 
-<script>
-/* ===== アイコン選択 ===== */
-const icons = document.querySelectorAll(".icon");
-let selectedIcon = "";
+  <script>
+  /* ===== アイコン選択 ===== */
+  const icons = document.querySelectorAll(".icon");
+  let selectedIcon = "";
 
-icons.forEach(icon=>{
-  icon.addEventListener("click",()=>{
-    icons.forEach(i=>i.classList.remove("selected"));
-    icon.classList.add("selected");
-    selectedIcon = icon.textContent;
+  icons.forEach(icon=>{
+    icon.addEventListener("click",()=>{
+      icons.forEach(i=>i.classList.remove("selected"));
+      icon.classList.add("selected");
+      selectedIcon = icon.textContent;
+    });
   });
-});
 
-/* ===== 画像プレビュー ===== */
-function previewImage(input){
-  const file = input.files[0];
-  if(!file) return;
-  const img = document.createElement("img");
-  img.src = URL.createObjectURL(file);
-  const p = document.getElementById("preview");
-  p.innerHTML="";
-  p.appendChild(img);
-}
+  /* ===== 画像プレビュー ===== */
+  function previewImage(input){
+    const file = input.files[0];
+    if(!file) return;
+    const img = document.createElement("img");
+    img.src = URL.createObjectURL(file);
+    const p = document.getElementById("preview");
+    p.innerHTML="";
+    p.appendChild(img);
+  }
 
-/* ===== 次へ ===== */
+  /* ===== 次へ ===== */
 function goNext(){
   const name = document.getElementById("name").value.trim();
+
   if(!name){
     alert("お名前を入力してください！");
     return;
   }
-  // 次ページへ（同じフォルダに置く）
+
+  if(!selectedIcon){
+    alert("アイコンを選択してください！");
+      document.querySelector(".icons").classList.add("shake");
+  setTimeout(()=> {
+    document.querySelector(".icons").classList.remove("shake");
+  }, 400);
+    return;
+  }
+
   location.href = "./bingo.html";
 }
-</script>
-
-</body>
-</html>
 
 
+  </script>
+
+  </body>
+  </html>
