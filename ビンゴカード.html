@@ -1,0 +1,106 @@
+<style>
+:root{
+  --colB:#ffd7e5;
+  --colI:#ffefd7;
+  --colN:#e7ffd7;
+  --colG:#d7f3ff;
+  --colO:#ead7ff;
+  --pink:#f8a4c3;
+  --pink-2:#e67cb8;
+  --accent:#e60073;
+}
+body {
+  font-family:'Hiragino Kaku Gothic ProN', system-ui, -apple-system, sans-serif;
+  background:linear-gradient(135deg,#fff0f6,#e0f7fa);
+  text-align:center;
+  padding:24px 16px 56px;
+  color:#444;
+}
+h1 { font-size:32px; color:var(--pink-2); margin:6px 0 12px; }
+
+#bingo-card, .detail-card {
+  --size:56px;
+  display:grid;
+  grid-template-columns:repeat(5,var(--size));
+  gap:6px;
+  justify-content:center;
+  margin-top:12px;
+}
+
+.cell {
+  width:var(--size);
+  height:var(--size);
+  line-height:var(--size);
+  background:#fff;
+  border:2px solid var(--pink);
+  border-radius:10px;
+  font-size:18px;
+  user-select:none;
+}
+
+.cell.marked {
+  background:#fff;
+  font-weight:700;
+  color:var(--accent);
+}
+.cell.free {
+  background:#fff !important;
+  color:var(--accent);
+}
+
+.col-0:not(.marked){ background:var(--colB); }
+.col-1:not(.marked){ background:var(--colI); }
+.col-2:not(.marked){ background:var(--colN); }
+.col-3:not(.marked){ background:var(--colG); }
+.col-4:not(.marked){ background:var(--colO); }
+
+.cell.win {
+  animation: winBlink .9s ease-in-out infinite;
+  box-shadow:0 0 0 2px #ff6b6b inset;
+}
+@keyframes winBlink {
+  0%,100%{filter:brightness(1)}
+  50%{filter:brightness(1.25)}
+}
+
+.cell.near {
+  animation: nearPulse 1.2s ease-in-out infinite;
+}
+@keyframes nearPulse {
+  0%{box-shadow:0 0 0 0 rgba(255,200,0,.6)}
+  70%{box-shadow:0 0 0 10px rgba(255,200,0,0)}
+  100%{box-shadow:0 0 0 0 rgba(255,200,0,0)}
+}
+
+/* ===== ガチャ演出 ===== */
+#gOverlay {
+  position:fixed;
+  inset:0;
+  display:none;
+  align-items:center;
+  justify-content:center;
+  z-index:9997;
+}
+#gOverlay.show { display:flex; }
+
+#gBackdrop {
+  position:absolute;
+  inset:0;
+  background:rgba(0,0,0,.45);
+}
+
+.gachaBox {
+  position:relative;
+  background:rgba(255,255,255,.96);
+  padding:26px 34px;
+  border-radius:22px;
+  border:3px solid var(--pink-2);
+  box-shadow:0 18px 60px rgba(0,0,0,.35);
+}
+
+.slot {
+  font-size:80px;
+  font-weight:900;
+  color:#111;
+}
+</style>
