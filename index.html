@@ -46,7 +46,7 @@ body{
 }
 /* ===== タイトル全体 ===== */
 .title{
-  margin: 0 0 18px;
+  margin: 0 0 22px;
   padding: 0; 
   line-height: 1.25;          /* ← これが重要 */
   text-align: center;
@@ -55,7 +55,7 @@ body{
 /* 文字部分だけグラデ */
 .title-text{
   display:inline-block;
-  font-size:22px;             /* 少しだけ抑える */
+  font-size:25px;             /* 少しだけ抑える */
   font-weight:700;
   background:linear-gradient(135deg,#ff6fa7,#ffb347);
   -webkit-background-clip:text;
@@ -119,8 +119,10 @@ h1{
   transition:.2s;
 }
 .icon.selected{
-  background:#fff;
-  box-shadow:0 0 0 3px #ff8fab,0 0 18px rgba(255,120,170,.9);
+ background:#fff;
+  box-shadow:
+    0 0 0 3px #ff8fab,
+    0 0 18px rgba(255,120,170,.9);
 }
 
 /* ===== アップロード ===== */
@@ -168,15 +170,102 @@ h1{
     border-radius:24px;
   }
 
+  .anniv-image-wrap img{
+    max-width:200px;
+  }
+
   .title-text{
     font-size:22px;
   }
 
-  .icon{
-    font-size:30px;
-  }
+.icon{
+  width:56px;              /* ← 固定 */
+  height:56px;             /* ← 固定 */
+  font-size:32px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  border-radius:50%;       /* ← 完全な円 */
+  cursor:pointer;
+  transition:.2s;
+}
+}
+.guild-line{
+  font-size:15px;
+  font-weight:700;
+  margin-bottom:6px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:6px;
 }
 
+/* 文字だけ装飾 */
+.guild-name{
+  padding:4px 10px;
+  border-radius:999px;
+  background:linear-gradient(135deg,#fff0f6,#ffe0ea);
+  color:#ff5f9e;
+  box-shadow:0 2px 8px rgba(255,120,170,.35);
+  letter-spacing:.05em;
+}
+/* 1st Anniversary バッジ風 */
+.anniv-badge{
+  display:inline-block;
+  margin:8px 0 14px;
+  padding:6px 18px;
+  font-size:18px;
+  font-weight:700;
+  color:#fff;
+  background:linear-gradient(135deg,#ff6fa7,#ffb347);
+  border-radius:999px;
+  box-shadow:0 6px 18px rgba(255,120,170,.6);
+  letter-spacing:.05em;
+}
+
+/* BINGO行 */
+.bingo-line{
+  font-size:22px;
+  font-weight:700;
+  margin-top:8px;
+}
+
+.bingo-text{
+  background:linear-gradient(135deg,#ff6fa7,#ffb347);
+  -webkit-background-clip:text;
+  color:transparent;
+  text-shadow:0 4px 14px rgba(255,120,170,.5);
+}
+
+.jji{
+  font-size:24px;
+  margin:0 2px;
+}
+
+.bingo-text{
+  background:linear-gradient(135deg,#ff6fa7,#ffb347);
+  -webkit-background-clip:text;
+  color:transparent;
+  text-shadow:0 4px 14px rgba(255,120,170,.5);
+}
+
+.emoji{
+  font-size:24px;
+  margin:0 2px;
+}
+/* Anniversary画像 */
+.anniv-image-wrap{
+  margin:6px 0 10px;     /* ← 余白調整 */
+}
+
+.anniv-image-wrap img{
+  max-width:220px;
+  width:100%;
+  height:auto;
+  display:block;
+  margin:0 auto;
+  filter: drop-shadow(0 6px 18px rgba(0,0,0,.35));
+}
 </style>
 </head>
 
@@ -185,11 +274,21 @@ h1{
   <div class="register-card">
 
 <h1 class="title">
-  <span class="title-emoji">🎊</span>
-  <span class="title-text">Sushi 1st Anniversary</span>
-  <span class="title-emoji">🎊</span><br>
-  <span class="title-text">年末ジャンボ!! BINGO </span>
-  <span class="title-emoji">🍣</span>
+  <div class="guild-line">
+    <span class="emoji">🍣</span>
+    <span class="guild-name">Sushi ギルド</span>
+    <span class="emoji">🍣</span>
+  </div>
+
+  <div class="anniv-image-wrap">
+    <img src="anniversary.png" alt="1st Anniversary">
+  </div>  
+
+  <div class="bingo-line">
+    <span class="emoji">🎊</span>
+    <span class="bingo-text">年末ジャンボ!! BINGO</span>
+    <span class="emoji">🎊</span>
+  </div>
 </h1>
 
     <input id="name" type="text" placeholder="お名前">
@@ -251,4 +350,3 @@ function goNext(){
 
 </body>
 </html>
-
