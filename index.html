@@ -10,7 +10,10 @@
 body{
   margin:0;
   font-family:"Hiragino Kaku Gothic ProN", Meiryo, sans-serif;
-  background:url("festival_bg.jpg") center/85% auto no-repeat fixed;
+  background-image:url("festival_bg.jpg");
+  background-position:center top;
+  background-repeat:no-repeat;
+  background-size:cover;      /* ← 最重要 */
   min-height:100vh;
 }
 
@@ -44,7 +47,7 @@ body{
 /* ===== タイトル全体 ===== */
 .title{
   margin: 0 0 18px;
-  padding: 0;
+  padding: 0; 
   line-height: 1.25;          /* ← これが重要 */
   text-align: center;
 }
@@ -52,7 +55,7 @@ body{
 /* 文字部分だけグラデ */
 .title-text{
   display:inline-block;
-  font-size:20px;             /* 少しだけ抑える */
+  font-size:25px;             /* 少しだけ抑える */
   font-weight:700;
   background:linear-gradient(135deg,#ff6fa7,#ffb347);
   -webkit-background-clip:text;
@@ -159,6 +162,21 @@ h1{
   position:relative;
   z-index:10;
 }
+@media (max-width: 480px){
+  .register-card{
+    padding:24px 18px 30px;
+    border-radius:24px;
+  }
+
+  .title-text{
+    font-size:22px;
+  }
+
+  .icon{
+    font-size:30px;
+  }
+}
+
 </style>
 </head>
 
@@ -227,11 +245,9 @@ function goNext(){
     return;
   }
   // 次ページへ（同じフォルダに置く）
-  location.href = "bingo.html";
+  location.href = "ビンゴカード.html";
 }
 </script>
 
 </body>
 </html>
-
-
