@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+input{ font-size:16px; padding:10px; border-radius:8px; border:1px solid #ccc; }
+.icons{ display:flex; justify-content:center; gap:10px; margin:12px 0; }
+.icon{ font-size:32px; cursor:pointer; padding:8px; border-radius:50%; }
+.icon.selected{ background:#fff; border:2px solid #e67cb8; }
+.preview{ margin-top:10px; }
+.preview img{ width:96px; height:96px; border-radius:50%; object-fit:cover; border:3px solid #e67cb8; }
+button{
+margin-top:20px;
+font-size:18px;
+padding:12px 28px;
+border:none;
+border-radius:999px;
+background:#f8a4c3;
+color:white;
+cursor:pointer;
+}
+</style>
+</head>
+<body>
+
+
+<h1>🎅【年末年始】お寿司BINGO大会🎁</h1>
+<p>お名前・アイコン・写真を設定してね</p>
+
+
+<input id="name" placeholder="お名前"><br><br>
+
+
+<div class="icons">
+<div class="icon">🎀</div>
+<div class="icon">🍣</div>
+<div class="icon">🐱</div>
+<div class="icon">🐸</div>
+</div>
+
+
+<input type="file" accept="image/*" id="photo">
+<div class="preview" id="preview"></div>
+
+
+<button onclick="goNext()">Let’s party night 🎉</button>
+
+
+<script>
+let selectedIcon = null;
+let photoData = null;
+
+
+document.querySelectorAll('.icon').forEach(el=>{
+el.onclick = ()=>{
+document.querySelectorAll('.icon').forEach(i=>i.classList.remove('selected'));
+el.classList.add('selected');
+selectedIcon = el.textContent;
+};
+});
+
+
+document.getElementById('photo').addEventListener('change', e=>{
+const file = e.target.files[0];
+if(!file) return;
+const reader = new FileReader();
+reader.onload = ()=>{
+photoData = reader.result;
+document.getElementById('preview').innerHTML = `<img src="${photoData}">`;
+};
+reader.readAsDataURL(file);
+});
+
+
+function goNext(){
+const name = document.getElementById('name').value.trim();
+if(!name || !selectedIcon){ alert('名前とアイコンを選んでね'); return; }
+localStorage.setItem('albion_bingo_name', name);
+localStorage.setItem('albion_bingo_icon', selectedIcon);
+if(photoData) localStorage.setItem('albion_bingo_photo', photoData);
+location.href = 'bingo.html';
+}
+</script>
+
+
+</body>
+</html>
