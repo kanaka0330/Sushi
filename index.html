@@ -303,6 +303,10 @@
   </style>
   </head>
   <body>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+
+
     <audio id="selectSound" preload="auto">
   <source src="select.mp3" type="audio/mpeg">
 </audio>
@@ -395,15 +399,59 @@ function goNext(){
 
   if(!selectedIcon){
     alert("アイコンを選択してください！");
-      document.querySelector(".icons").classList.add("shake");
-  setTimeout(()=> {
-    document.querySelector(".icons").classList.remove("shake");
-  }, 400);
+    document.querySelector(".icons").classList.add("shake");
+    setTimeout(()=> {
+      document.querySelector(".icons").classList.remove("shake");
+    }, 400);
     return;
   }
 
-  location.href = "./bingo.html";
+  // 🔑 ユーザーIDを作る（1回だけ）
+  let userId = localStorage.getItem("bingo_user_id");
+  if(!userId){
+    userId = db.ref("events/event1/participants").push().key;
+    localStorage.setItem("bingo_user_id", userId);
+  }
+
+  // 🎯 ビンゴカードはここでは空でOK（bingo.htmlで生成）
+  const playerData = {
+    name: name,
+    icon: selectedIcon,
+    status: "参加中",
+    createdAt: Date.now()
+  };
+
+  // 🔥 Firebaseに保存
+  db.ref(`events/event1/participants/${userId}`).set(playerData)
+    .then(()=>{
+      // 名前・アイコンもローカル保存（画面復帰用）
+      localStorage.setItem("bingo_name", name);
+      localStorage.setItem("bingo_icon", selectedIcon);
+
+      // bingo本体へ
+      location.href = "./bingo.html";
+    })
+    .catch(err=>{
+      console.error(err);
+      alert("登録に失敗しました");
+    });
 }
+
+
+
+const firebaseConfig = {
+  apiKey: "AIzaSyCVofvlR6N837LqdNxRweTq93Uu6qpgbsI",
+  authDomain: "sushi-cd085.firebaseapp.com",
+  databaseURL: "https://sushi-cd085-default-rtdb.firebaseio.com",
+  projectId: "sushi-cd085",
+  storageBucket: "sushi-cd085.firebasestorage.app",
+  messagingSenderId: "647312569662",
+  appId: "1:647312569662:web:4d9a22d2e93cd139f7a86f"
+};
+
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+
 
 
   </script>
