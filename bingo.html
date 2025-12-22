@@ -9,6 +9,7 @@
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
 
+
   <style>
     :root{
       --colB:#ffd7e5; /* B列 */
@@ -200,20 +201,26 @@
   <script>
     /************** Firebase 初期化 **************/
     const firebaseConfig = {
-      apiKey:"AIzaSyDpiUUB8mB1eFBu2YejFVQlKtP1DF9cFKw",
-      authDomain:"albion-0623.firebaseapp.com",
-      databaseURL:"https://albion-0623-default-rtdb.firebaseio.com",
-      projectId:"albion-0623",
-      storageBucket:"albion-0623.appspot.com",
-      messagingSenderId:"198257160394",
-      appId:"1:198257160394:web:7338d0a854e6f857584433",
-      measurementId:"G-SRZ2TFNREX"
-    };
+  apiKey: "AIzaSyCVofvlR6N837LqdNxRweTq93Uu6qpgbsI",
+  authDomain: "sushi-cd085.firebaseapp.com",
+  databaseURL: "https://sushi-cd085-default-rtdb.firebaseio.com",
+  projectId: "sushi-cd085",
+  storageBucket: "sushi-cd085.firebasestorage.app",
+  messagingSenderId: "647312569662",
+  appId: "1:647312569662:web:4d9a22d2e93cd139f7a86f"
+};
+
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
     /************** ローカル保存キー **************/
-    const LS_KEYS = { id:"albion_bingo_myId", name:"albion_bingo_name", card:"albion_bingo_card" };
+    const LS_KEYS = {
+  id: "bingo_user_id",
+  name: "bingo_name",
+  icon: "bingo_icon",
+  card: "bingo_card"
+};
+
 
     /************** 変数 **************/
     const size = 5;
@@ -334,7 +341,7 @@
 
       // 先にDBへ反映（UIはリスナーで追従）
       const next = [...drawnNumbers, num];
-      db.ref("drawnNumbers").set(next);
+      db.ref("events/event1/drawnNumbers").set(next);
 
       // 豪華ガチャ演出（スキップ可）
       showGacha(num);
@@ -391,13 +398,7 @@
       if(nm) localStorage.setItem(LS_KEYS.name, nm);
       localStorage.setItem(LS_KEYS.card, JSON.stringify(cardNumbers));
     }
-    function registerPlayer(){
-      const name = nameInput.value.trim();
-      if(!name) return alert("名前を入力してください！");
-      if(!myId) myId = db.ref("participants").push().key;
-      db.ref("participants/"+myId).set({ name, status:"参加中", card: cardNumbers });
-      saveLocal(); alert("参加登録しました！");
-    }
+
     async function tryRestore(){
       const storedId = localStorage.getItem(LS_KEYS.id);
       const storedName = localStorage.getItem(LS_KEYS.name);
@@ -405,13 +406,14 @@
       if(storedName) nameInput.value = storedName;
       if(storedId){
         myId = storedId;
-        const snap = await db.ref("participants/"+storedId).once("value");
+        const snap = await db.ref("events/event1/participants/"+storedId).once("value");
         const p = snap.val();
         if(p && Array.isArray(p.card)){ cardNumbers=p.card; displayCard(); return true; }
         if(storedCard){
           try{ const c=JSON.parse(storedCard);
             if(Array.isArray(c)&&c.length===25){ cardNumbers=c; displayCard(); const nm=storedName||"Player";
-              await db.ref("participants/"+storedId).set({ name:nm, status:"参加中", card:cardNumbers });
+              await db.ref("events/event1/participants/"+storedId)
+.set({ name:nm, status:"参加中", card:cardNumbers });
               return true; }
           }catch(_){}
         }
@@ -450,7 +452,7 @@
       const newStatus = computeStatus(p.card, drawn);
       if(newStatus === p.status) return;
 
-      await db.ref(`participants/${id}/status`).set(newStatus);
+      await db.ref(`events/event1/participants/${id}/status`).set(newStatus);
 
       if(newStatus==="リーチ"){
         if(id===myId){ ensureAudioReady().then(()=>reachSound()).catch(()=>{}); }
@@ -465,7 +467,7 @@
     }
 
     /************** 参加者監視 **************/
-    db.ref("participants").on("value",snap=>{
+    db.ref("events/event1/participants").on("value", snap => {
       const data=snap.val()||{};
       participantList.innerHTML="";
       Object.entries(data).forEach(([id,p])=>{
@@ -479,7 +481,7 @@
     });
 
     /************** 抽選番号の同期 **************/
-    db.ref("drawnNumbers").on("value",snap=>{
+    db.ref("events/event1/drawnNumbers").on("value", snap => {
       drawnNumbers = snap.val()||[];
       updateDrawnNumbersUI();
       db.ref("participants").once("value").then(s=>{
@@ -507,8 +509,8 @@
     /************** リセット **************/
     function resetGame(){
       if(!confirm("ゲームをリセットしますか？（抽選履歴・参加者情報・順位ログ・rankCounter・端末内の保存を初期化）")) return;
-      db.ref("drawnNumbers").set([]);
-      db.ref("participants").set({});
+      db.ref("events/event1/participants").set({});
+      db.ref("events/event1/drawnNumbers").set([]);
       db.ref("bingoLogs").set({});
       db.ref("rankCounter").set(0);
       drawnNumbers=[]; updateDrawnNumbersUI();
