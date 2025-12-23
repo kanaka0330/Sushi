@@ -1,552 +1,143 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>🎀年末ジャンボ ビンゴ大会 🎀</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>🎀年末ジャンボ ビンゴ大会 🎀</title>
 
-  <!-- Firebase SDK -->
-  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+<!-- Firebase -->
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
 
-
-  <style>
-    :root{
-      --colB:#ffd7e5; /* B列 */
-      --colI:#ffefd7; /* I列 */
-      --colN:#e7ffd7; /* N列 */
-      --colG:#d7f3ff; /* G列 */
-      --colO:#ead7ff; /* O列 */
-      --pink:#f8a4c3;
-      --pink-2:#e67cb8;
-      --accent:#e60073;
-    }
-    body {
-      font-family:'Hiragino Kaku Gothic ProN', system-ui, -apple-system, sans-serif;
-      background:linear-gradient(135deg,#fff0f6,#e0f7fa);
-      text-align:center; padding:24px 16px 56px; color:#444;
-    }
-    h1 { font-size:32px; color:var(--pink-2); margin:6px 0 12px; }
-    .controls { margin:8px 0 16px; display:flex; flex-wrap:wrap; gap:8px; justify-content:center; align-items:center; }
-
-    /* 5×5グリッド（自分/詳細で統一） */
-    #bingo-card, .detail-card {
-      --size:56px;
-      display:grid; grid-template-columns:repeat(5,var(--size));
-      gap:6px; justify-content:center; margin-top:12px;
-    }
-    @media (max-width:520px){
-      #bingo-card, .detail-card{ --size:48px; }
-    }
-    .cell {
-      width:var(--size); height:var(--size); line-height:var(--size);
-      background:#fff; border:2px solid var(--pink); border-radius:10px;
-      font-size:18px; user-select:none; transition:transform .15s;
-    }
-    /* ★ 当たったマス = 背景白 + 文字ピンク（FREEと同様） */
-    .cell.marked { background:#fff; font-weight:700; color:var(--accent); }
-    /* FREEは常に白でB列と混同しない */
-    .cell.free { background:#fff !important; color:var(--accent); }
-
-    /* ライン演出 */
-    .cell.win { animation: winBlink .9s ease-in-out infinite; box-shadow:0 0 0 2px #ff6b6b inset; }
-    @keyframes winBlink { 0%,100%{filter:brightness(1)} 50%{filter:brightness(1.25)} }
-    .cell.near { animation: nearPulse 1.2s ease-in-out infinite; }
-    @keyframes nearPulse { 0%{box-shadow:0 0 0 0 rgba(255,200,0,.6)} 70%{box-shadow:0 0 0 10px rgba(255,200,0,0)} 100%{box-shadow:0 0 0 0 rgba(255,200,0,0)} }
-
-    /* 列色分け（未マーク時のみ）*/
-    .col-0:not(.marked){ background:var(--colB); }
-    .col-1:not(.marked){ background:var(--colI); }
-    .col-2:not(.marked){ background:var(--colN); }
-    .col-3:not(.marked){ background:var(--colG); }
-    .col-4:not(.marked){ background:var(--colO); }
-
-    button {
-      font-size:16px; padding:10px 16px; background:var(--pink); border:none; border-radius:8px; color:#fff; cursor:pointer;
-    }
-    button:hover { background:var(--pink-2); }
-    input[type="text"] { padding:8px; font-size:16px; border:1px solid #ccc; border-radius:6px; }
-    #participants ul { list-style:none; padding:0; margin-top:10px; }
-    #participants li { margin:6px 0; cursor:pointer; }
-    #detail-card {
-      margin-top:12px; padding:10px; background:#fff8fb; border:2px dashed var(--pink-2);
-      border-radius:12px; display:grid; grid-template-columns:repeat(5,var(--size));
-      gap:6px; width:fit-content; margin-left:auto; margin-right:auto;
-    }
-    .badge { display:inline-block; padding:2px 8px; border-radius:999px; font-size:12px; margin-left:6px; }
-    .badge.wait { background:#eee; }
-    .badge.reach { background:#ffe082; }
-    .badge.bingo { background:#c8e6c9; }
-    .host-toggle { display:inline-flex; align-items:center; gap:8px; font-size:14px; }
-    .last-num { font-weight:bold; font-size:18px; }
-    .numbers-scroll { max-width:680px; margin:8px auto 0; overflow-x:auto; white-space:nowrap; }
-
-    /* ===== 演出オーバーレイ（豪華＆スキップ対応） ===== */
-    .hidden{ display:none !important; }
-    #gOverlay { position:fixed; inset:0; display:none; align-items:center; justify-content:center; z-index:9997; }
-    #gOverlay.show { display:flex; }
-    #gBackdrop { position:absolute; inset:0; background:rgba(0,0,0,.45); cursor:pointer; }
-
-    /* 画面フラッシュ */
-    .flash{ position:absolute; inset:0; background:#fff; opacity:0; animation:flash 600ms ease-out forwards; pointer-events:none; }
-    @keyframes flash{ 0%{opacity:0} 10%{opacity:.9} 100%{opacity:0} }
-
-    /* 光条（rays） */
-    .rays{
-      position:absolute; width:80vmin; height:80vmin; border-radius:50%;
-      background:conic-gradient(from 0deg, #fff0 0, #fff6 12%, #fff0 24%, #fff0 50%, #fff6 62%, #fff0 74%, #fff0 100%);
-      filter:blur(6px); animation:spinRays 2.2s linear infinite;
-    }
-    @keyframes spinRays{ to{ transform:rotate(360deg);} }
-
-    /* モーダル本体 */
-    .gachaBox{
-      position:relative; background:rgba(255,255,255,.96); padding:26px 34px; border-radius:22px;
-      border:3px solid var(--pink-2); box-shadow:0 18px 60px rgba(0,0,0,.35);
-      overflow:hidden; animation:popIn .5s ease, subtleShake 900ms ease-in-out 1 700ms;
-    }
-    @keyframes popIn{ from{ transform:scale(.7); opacity:0 } to{ transform:scale(1); opacity:1 } }
-    @keyframes subtleShake{
-      0%{ transform:translate(0) } 25%{ transform:translate(2px,-1px) } 50%{ transform:translate(-2px,1px) }
-      75%{ transform:translate(2px,0px) } 100%{ transform:translate(0) }
-    }
-
-    /* レンズフレア風 */
-    .flare{ position:absolute; width:120px; height:120px; background:radial-gradient(#fff, #fff0 60%); top:-30px; left:-30px; filter:blur(6px); opacity:.6; animation:flare 1.4s ease-in-out infinite; }
-    @keyframes flare{ 0%{transform:translate(0,0) scale(.8)} 50%{transform:translate(240px,120px) scale(1.1)} 100%{transform:translate(0,0) scale(.8)} }
-
-    /* シャイン */
-    .shine{
-      position:absolute; inset:0; pointer-events:none;
-      background:linear-gradient(120deg, transparent 0%, rgba(255,255,255,.0) 35%, rgba(255,255,255,.8) 50%, rgba(255,255,255,.0) 65%, transparent 100%);
-      transform:translateX(-120%); animation:shineMove 1.1s ease-out 300ms 1 forwards;
-    }
-    @keyframes shineMove{ to{ transform:translateX(120%);} }
-
-    /* スロット数字 */
-    .slot{ font-size:80px; font-weight:900; letter-spacing:.05em; line-height:1; color:#111;
-      text-shadow: 0 2px 0 #fff, 0 8px 16px rgba(0,0,0,.18); }
-    @keyframes spin { 0%{transform:rotateX(0)} 100%{transform:rotateX(1080deg)} }
-    .spinNow{ animation:spin 1.3s cubic-bezier(.2,.8,.2,1) }
-    .slot-pop{ animation:pop 380ms ease }
-    @keyframes pop{ 0%{transform:scale(1);filter:brightness(1)} 70%{transform:scale(1.45);filter:brightness(1.3)} 100%{transform:scale(1)} }
-
-    /* グリッターリング */
-    .glitterRing{
-      position:absolute; inset:0; display:flex; align-items:center; justify-content:center; pointer-events:none;
-    }
-    .glitterRing::before{
-      content:""; width:220px; height:220px; border-radius:50%;
-      background:radial-gradient(circle, rgba(255,255,255,.95) 0 8%, rgba(255,192,203,.6) 12%, rgba(255,255,255,0) 60%);
-      filter:blur(8px); opacity:0; animation:ring .7s ease-out forwards;
-    }
-    @keyframes ring{ 0%{transform:scale(.6);opacity:0} 100%{transform:scale(1);opacity:1} }
-
-    /* 紙吹雪／スパーク */
-    .conf{ position:fixed; top:-16px; width:10px; height:14px; border-radius:2px; z-index:3000; opacity:.95; animation:fall var(--dur,2.8s) linear forwards; }
-    @keyframes fall{ to{ transform:translateY(110vh) rotate(720deg); opacity:0 } }
-    .spark{ position:fixed; width:6px; height:6px; background:#fff; border-radius:2px; box-shadow:0 0 12px 4px #fff8; z-index:3000; opacity:.95; animation:spark .9s ease-out forwards; }
-    @keyframes spark{ from{transform:scale(.4)} to{transform:scale(2.2); opacity:0} }
-  </style>
+<style>
+body{
+  font-family:'Hiragino Kaku Gothic ProN', sans-serif;
+  background:linear-gradient(135deg,#fff0f6,#e0f7fa);
+  text-align:center;
+  padding:20px;
+}
+h1{color:#e67cb8}
+#bingo-card{
+  display:grid;
+  grid-template-columns:repeat(5,60px);
+  gap:6px;
+  justify-content:center;
+  margin:20px auto;
+}
+.cell{
+  width:60px;height:60px;line-height:60px;
+  border:2px solid #f8a4c3;
+  border-radius:10px;
+  background:#fff;
+  font-weight:bold;
+}
+.cell.marked{
+  background:#fff;
+  color:#e60073;
+}
+button{
+  padding:10px 16px;
+  border:none;
+  border-radius:8px;
+  background:#f8a4c3;
+  color:#fff;
+  cursor:pointer;
+}
+</style>
 </head>
+
 <body>
-  <h1>🎀年末ジャンボ ビンゴ大会 🎀</h1>
 
-  <!-- 名前入力＆主催者モード＆急ぎモード -->
-  <div class="controls">
-    <button onclick="resetGame()">リセット</button>
-  <!--    <label class="host-toggle">
-      <input type="checkbox" id="host-mode" />
-      主催者モード（抽選できるのはオンの人のみ）
-    </label>
-  -->
-  </div>
+<h1>🎀年末ジャンボ ビンゴ大会 🎀</h1>
 
-  <!-- 自分のカード -->
-  <div id="bingo-card"></div>
+<div>
+  <button onclick="resetGame()">リセット</button>
+</div>
 
-  <!-- 抽選 -->
-  <div class="controls">
-    <button onclick="drawNumber()">番号をひく🎲</button>
-    <div id="drawn-numbers">
-      <div>最新番号：<span class="last-num" id="last-number">–</span></div>
-      <div class="numbers-scroll"><strong>出た番号：</strong><span id="numbers-list">（まだありません）</span></div>
-    </div>
-  </div>
+<div id="bingo-card"></div>
 
-  <!-- 参加者一覧 -->
-  <div id="participants">
-    <h3>🌸 参加者一覧</h3>
-    <ul id="participant-list"></ul>
-  </div>
+<div>
+  <button onclick="drawNumber()">番号をひく 🎲</button>
+  <div>最新番号：<span id="last-number">–</span></div>
+  <div>出た番号：<span id="numbers-list">（まだありません）</span></div>
+</div>
 
-  <!-- ===== 演出用DOM（豪華ガチャ＋スキップ可） ===== -->
-  <div id="gOverlay">
-    <div id="gBackdrop" title="クリックでスキップ"></div>
-    <div id="gFlash" class="flash" style="display:none"></div>
-    <div class="rays"></div>
-    <div class="gachaBox" id="gBox">
-      <div class="flare"></div>
-      <div class="shine"></div>
-      <div class="slot" id="slot">??</div>
-      <div class="glitterRing" id="gGlitter" style="display:none"></div>
-    </div>
-  </div>
-
-  <script>
-    /************** Firebase 初期化 **************/
-    const firebaseConfig = {
+<script>
+/* ===== Firebase ===== */
+firebase.initializeApp({
   apiKey: "AIzaSyCVofvlR6N837LqdNxRweTq93Uu6qpgbsI",
   authDomain: "sushi-cd085.firebaseapp.com",
   databaseURL: "https://sushi-cd085-default-rtdb.firebaseio.com",
-  projectId: "sushi-cd085",
-  storageBucket: "sushi-cd085.firebasestorage.app",
-  messagingSenderId: "647312569662",
-  appId: "1:647312569662:web:4d9a22d2e93cd139f7a86f"
-};
+  projectId: "sushi-cd085"
+});
+const db = firebase.database();
 
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.database();
+/* ===== 変数 ===== */
+const SIZE = 5;
+let card = [];
+let drawn = [];
 
-    /************** ローカル保存キー **************/
-    const LS_KEYS = {
-  id: "bingo_user_id",
-  name: "bingo_name",
-  icon: "bingo_icon",
-  card: "bingo_card"
-};
+const cardEl = document.getElementById("bingo-card");
+const lastEl = document.getElementById("last-number");
+const listEl = document.getElementById("numbers-list");
 
-
-    /************** 変数 **************/
-    const size = 5;
-    let cardNumbers = [];
-    let drawnNumbers = [];
-    let myId = localStorage.getItem(LS_KEYS.id) || null;
-    let openedDetailId = null;
-
-    const cardEl = document.getElementById("bingo-card");
-    const lastNumberEl = document.getElementById("last-number");
-    const numbersListEl = document.getElementById("numbers-list");
-    const nameInput = document.getElementById("player-name");
-    const participantList = document.getElementById("participant-list");
-    const hostMode = document.getElementById("host-mode");
-    const fastSkip = document.getElementById("fast-skip");
-
-    /************** Web Audio（簡易SE） **************/
-    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    async function ensureAudioReady(){ try{ if(audioCtx.state==="suspended") await audioCtx.resume(); }catch(_){} }
-    function beep({freq=880, dur=0.15, type="sine", gain=0.06}={}){ try{
-      const o=audioCtx.createOscillator(), g=audioCtx.createGain();
-      o.type=type; o.frequency.value=freq; g.gain.value=gain;
-      o.connect(g); g.connect(audioCtx.destination); o.start();
-      setTimeout(()=>o.stop(), dur*1000);
-    }catch(_){ } }
-    function reachSound(){ beep({freq:1200,dur:.08,type:"triangle"}); setTimeout(()=>beep({freq:1600,dur:.09,type:"triangle"}),90); }
-    function bingoSound(){ [0,120,240,360].forEach((t,i)=>setTimeout(()=>beep({freq:700+i*120,dur:.11,type:"square",gain:.08}),t));
-      setTimeout(()=>beep({freq:1300,dur:.25,type:"sawtooth",gain:.09}),420); }
-    function gachaSound(){ for(let i=0;i<7;i++) setTimeout(()=>beep({freq:500+i*40,dur:.07,type:"square",gain:.04}), i*90);
-      setTimeout(()=>beep({freq:900,dur:.22,type:"triangle",gain:.06}), 7*90+60); }
-
-    /************** カード描画 **************/
-    function generateCard(){
-      const used = new Set(); cardNumbers = [];
-      for(let i=0;i<size*size;i++){ let num; do{ num=Math.floor(Math.random()*75)+1; }while(used.has(num)); used.add(num); cardNumbers[i]=num; }
-      cardNumbers[Math.floor(size*size/2)]="FREE";
+/* ===== カード生成 ===== */
+function generateCard(){
+  const used = new Set();
+  card=[];
+  while(card.length<25){
+    const n = Math.floor(Math.random()*75)+1;
+    if(!used.has(n)){
+      used.add(n);
+      card.push(n);
     }
-    function displayCard(){
-      cardEl.innerHTML = "";
-      for(let i=0;i<cardNumbers.length;i++){
-        const n = cardNumbers[i]; const col = i % 5;
-        const cell = document.createElement("div");
-        cell.className = `cell col-${col}`; cell.textContent = n;
-        if(n==="FREE") cell.classList.add("marked","free");
-        cardEl.appendChild(cell);
-      }
-      markCardWithDrawn();
-    }
+  }
+  card[12] = "FREE";
+}
 
-    /************** スロット回転トリガー **************/
-    function triggerSpin(el){ el.classList.remove("spinNow","slot-pop"); void el.offsetWidth; el.classList.add("spinNow"); }
+function renderCard(){
+  cardEl.innerHTML="";
+  card.forEach(v=>{
+    const d=document.createElement("div");
+    d.className="cell";
+    d.textContent=v;
+    if(v==="FREE" || drawn.includes(v)) d.classList.add("marked");
+    cardEl.appendChild(d);
+  });
+}
 
-    /************** ガチャ演出（スキップ対応） **************/
-    const gOverlay = document.getElementById("gOverlay");
-    const gBackdrop = document.getElementById("gBackdrop");
-    const gFlash = document.getElementById("gFlash");
-    const gBox = document.getElementById("gBox");
-    const slot = document.getElementById("slot");
-    const gGlitter = document.getElementById("gGlitter");
+/* ===== 抽選 ===== */
+function drawNumber(){
+  if(drawn.length>=75) return;
+  let n;
+  do{
+    n=Math.floor(Math.random()*75)+1;
+  }while(drawn.includes(n));
 
-    let gachaActive = false;
-    let currentGachaNumber = null;
-    let tReveal = null, tFire = null, tClose = null;
+  db.ref("events/event1/drawnNumbers").set([...drawn,n]);
+}
 
-    function openGacha(){
-      gOverlay.classList.add("show");
-      gFlash.style.display="none"; gGlitter.style.display="none";
-    }
-    function closeGacha(){
-      gOverlay.classList.remove("show");
-      gachaActive = false;
-      [tReveal, tFire, tClose].forEach(t=>{ if(t){ clearTimeout(t); } });
-      tReveal=tFire=tClose=null;
-    }
-    function skipGacha(){
-      if(!gachaActive) return;
-      slot.textContent = currentGachaNumber ?? slot.textContent;
-      gGlitter.style.display='flex'; gFlash.style.display='block';
-      closeGacha();
-      if (fastSkip.checked && hostMode.checked) setTimeout(()=>{ if(hostMode.checked) drawNumber(); }, 60);
-    }
-    gBackdrop.addEventListener("click", skipGacha);
-    document.addEventListener("keydown", (e)=>{ if(e.key==="Escape") skipGacha(); });
+/* ===== 同期 ===== */
+db.ref("events/event1/drawnNumbers").on("value", snap=>{
+  drawn = snap.val() || [];
+  lastEl.textContent = drawn.at(-1) ?? "–";
+  listEl.textContent = drawn.length ? drawn.join("・") : "（まだありません）";
+  renderCard();
+});
 
-    function showGacha(number){
-      gachaActive = true;
-      currentGachaNumber = number;
-      ensureAudioReady().then(()=>gachaSound()).catch(()=>{});
-      openGacha();
-      slot.textContent="??";
-      triggerSpin(slot);
+/* ===== リセット ===== */
+function resetGame(){
+  if(!confirm("リセットしますか？")) return;
+  db.ref("events/event1/drawnNumbers").set([]);
+  drawn=[];
+  generateCard();
+  renderCard();
+}
 
-      // 回転→数字表示
-      tReveal = setTimeout(()=>{
-        slot.textContent = number;
-        slot.classList.add("slot-pop");
-        gGlitter.style.display='flex';
-        gFlash.style.display='block';
-      }, 1300);
+/* ===== 初期化 ===== */
+generateCard();
+renderCard();
+</script>
 
-      // 紙吹雪＆スパーク
-      tFire = setTimeout(()=>{
-        burstConfetti(90);
-        spawnSparks(14);
-      }, 1320);
-
-      // 余韻→クローズ
-      tClose = setTimeout(()=>{ closeGacha(); }, 2800);
-    }
-
-    /************** 抽選（DB更新→演出） **************/
-    async function drawNumber(){
-      await ensureAudioReady();
-      if(!hostMode.checked) return alert("主催者モードがONの人のみ抽選できます。");
-      if(drawnNumbers.length>=75) return;
-
-      let num; do{ num=Math.floor(Math.random()*75)+1; }while(drawnNumbers.includes(num));
-
-      // 先にDBへ反映（UIはリスナーで追従）
-      const next = [...drawnNumbers, num];
-      db.ref("events/event1/drawnNumbers").set(next);
-
-      // 豪華ガチャ演出（スキップ可）
-      showGacha(num);
-    }
-
-    /************** UI反映＋ライン強調 **************/
-    function updateDrawnNumbersUI(){
-      const last = drawnNumbers[drawnNumbers.length-1];
-      lastNumberEl.textContent = last ?? "–";
-      numbersListEl.textContent = drawnNumbers.length ? drawnNumbers.join("・") : "（まだありません）";
-      markCardWithDrawn();
-    }
-    function getLineStatus(cardVals, drawn){
-      const lines=[]; for(let r=0;r<5;r++) lines.push([0,1,2,3,4].map(c=>r*5+c));
-      for(let c=0;c<5;c++) lines.push([0,1,2,3,4].map(r=>cardVals[r*5+c]));
-      lines.push([0,6,12,18,24],[4,8,12,16,20]);
-      const winningLines=[], nearLines=[];
-      for(const idxs of lines){
-        const marks = idxs.map(i=>cardVals[i]).filter(v=>v==="FREE"||drawn.includes(Number(v))).length;
-        if(marks===5) winningLines.push(idxs);
-        else if(marks===4) nearLines.push(idxs);
-      }
-      return {winningLines, nearLines};
-    }
-    function markCardWithDrawn(){
-      const cells = [...cardEl.querySelectorAll(".cell")];
-      cells.forEach(c=>c.classList.remove("marked","win","near","free"));
-      cells.forEach((c,idx)=>{
-        const val = c.textContent; const n = val==="FREE"?"FREE":Number(val);
-        if(n==="FREE") c.classList.add("marked","free");
-        if(n==="FREE"||drawnNumbers.includes(n)) c.classList.add("marked"); // ← 当たり＝白背景＆ピンク文字
-      });
-      const {winningLines, nearLines} = getLineStatus(cardNumbers, drawnNumbers);
-      winningLines.forEach(line=>line.forEach(i=>cells[i].classList.add("win")));
-      nearLines.forEach(line=>line.forEach(i=>cells[i].classList.add("near")));
-    }
-
-    /************** 判定・通知 **************/
-    function isMarkedValue(v,d){ if(v==="FREE") return true; return d.includes(Number(v)); }
-    function countLineMarks(line,d){ return line.reduce((a,v)=>a+(isMarkedValue(v,d)?1:0),0); }
-    function computeStatus(vals,d){
-      const lines=[]; for(let r=0;r<5;r++) lines.push(vals.slice(r*5,r*5+5));
-      for(let c=0;c<5;c++) lines.push([0,1,2,3,4].map(r=>vals[r*5+c]));
-      lines.push([0,6,12,18,24].map(i=>vals[i]),[4,8,12,16,20].map(i=>vals[i]));
-      let hasB=false, hasR=false;
-      for(const L of lines){ const m=countLineMarks(L,d); if(m===5) hasB=true; else if(m===4) hasR=true; }
-      return hasB?"ビンゴ":(hasR?"リーチ":"参加中");
-    }
-
-    /************** 参加登録＆復旧 **************/
-    function saveLocal(){
-      if(myId) localStorage.setItem(LS_KEYS.id,myId);
-      const nm = nameInput.value.trim() || localStorage.getItem(LS_KEYS.name) || "";
-      if(nm) localStorage.setItem(LS_KEYS.name, nm);
-      localStorage.setItem(LS_KEYS.card, JSON.stringify(cardNumbers));
-    }
-
-    async function tryRestore(){
-      const storedId = localStorage.getItem(LS_KEYS.id);
-      const storedName = localStorage.getItem(LS_KEYS.name);
-      const storedCard = localStorage.getItem(LS_KEYS.card);
-      if(storedName) nameInput.value = storedName;
-      if(storedId){
-        myId = storedId;
-        const snap = await db.ref("events/event1/participants/"+storedId).once("value");
-        const p = snap.val();
-        if(p && Array.isArray(p.card)){ cardNumbers=p.card; displayCard(); return true; }
-        if(storedCard){
-          try{ const c=JSON.parse(storedCard);
-            if(Array.isArray(c)&&c.length===25){ cardNumbers=c; displayCard(); const nm=storedName||"Player";
-              await db.ref("events/event1/participants/"+storedId)
-.set({ name:nm, status:"参加中", card:cardNumbers });
-              return true; }
-          }catch(_){}
-        }
-      }else if(storedCard){
-        try{ const c=JSON.parse(storedCard);
-          if(Array.isArray(c)&&c.length===25){ cardNumbers=c; displayCard(); return true; }
-        }catch(_){}
-      }
-      return false;
-    }
-
-    /************** 詳細モード（一枚のみ） **************/
-    function showDetailCard(player,id){
-      const existing=document.getElementById("detail-card");
-      if(openedDetailId===id){ if(existing) existing.remove(); openedDetailId=null; return; }
-      if(existing) existing.remove();
-      const detail=document.createElement("div");
-      detail.id="detail-card"; detail.className="detail-card";
-      player.card.forEach((n,idx)=>{
-        const c=document.createElement("div"); c.className=`cell col-${idx%5}`; c.textContent=n;
-        if(n==="FREE") c.classList.add("marked","free");
-        if(n==="FREE"||drawnNumbers.includes(Number(n))) c.classList.add("marked");
-        detail.appendChild(c);
-      });
-      participantList.appendChild(detail); openedDetailId=id;
-    }
-
-    /************** ビンゴ順位（rankCounter）＆ログ＋演出発火 **************/
-    async function assignBingoRank(){
-      const ref = db.ref("rankCounter");
-      const newRank = await ref.transaction(v=>(v||0)+1).then(r=>r.snapshot.val()).catch(()=>null);
-      return newRank;
-    }
-    async function onParticipantMaybeUpdateStatus(id,p,drawn){
-      const lastNumber = drawn[drawn.length-1] || null;
-      const newStatus = computeStatus(p.card, drawn);
-      if(newStatus === p.status) return;
-
-      await db.ref(`events/event1/participants/${id}/status`).set(newStatus);
-
-      if(newStatus==="リーチ"){
-        if(id===myId){ ensureAudioReady().then(()=>reachSound()).catch(()=>{}); }
-        notifyDiscord("reach",{name:p.name,lastNumber});
-      }else if(newStatus==="ビンゴ"){
-        const rank = await assignBingoRank();
-        const log = { name:p.name, lastNumber, rank:rank||null, ts:Date.now() };
-        await db.ref("bingoLogs/items").push(log);
-        if(id===myId){ ensureAudioReady().then(()=>bingoSound()).catch(()=>{}); }
-        notifyDiscord("bingo",{name:p.name,lastNumber,rank});
-      }
-    }
-
-    /************** 参加者監視 **************/
-    db.ref("events/event1/participants").on("value", snap => {
-      const data=snap.val()||{};
-      participantList.innerHTML="";
-      Object.entries(data).forEach(([id,p])=>{
-        const li=document.createElement("li");
-        const badgeClass = p.status==="ビンゴ"?"bingo":(p.status==="リーチ"?"reach":"wait");
-        li.innerHTML = `<strong>${p.name}</strong><span class="badge ${badgeClass}">${p.status}</span>`;
-        li.onclick = ()=>showDetailCard(p,id);
-        participantList.appendChild(li);
-        if(drawnNumbers.length && p.card) onParticipantMaybeUpdateStatus(id,p,drawnNumbers);
-      });
-    });
-
-    /************** 抽選番号の同期 **************/
-    db.ref("events/event1/drawnNumbers").on("value", snap => {
-      drawnNumbers = snap.val()||[];
-      updateDrawnNumbersUI();
-      db.ref("participants").once("value").then(s=>{
-        const participants=s.val()||{};
-        Object.entries(participants).forEach(([id,p])=>{
-          onParticipantMaybeUpdateStatus(id,p,drawnNumbers);
-        });
-      });
-    });
-
-    /************** Discord 通知（任意） **************/
-    const DISCORD_WEBHOOK_URL = ""; // 直貼りは非推奨
-    const DISCORD_PROXY_URL = "";   // 中継関数推奨
-    async function postDiscordDirect(payload){ if(!DISCORD_WEBHOOK_URL) return; try{ await fetch(DISCORD_WEBHOOK_URL,{method:"POST",headers:{ "Content-Type":"application/json"},body:JSON.stringify(payload)});}catch(e){ console.warn("Discord送信失敗",e); } }
-    async function postDiscordProxy(payload){ if(!DISCORD_PROXY_URL) return; try{ await fetch(DISCORD_PROXY_URL,{method:"POST",headers:{ "Content-Type":"application/json"},body:JSON.stringify(payload)});}catch(e){ console.warn("Discord送信失敗",e); } }
-    async function notifyDiscord(type, data){
-      const content =
-        type==="reach"
-          ? `🎯 ${data.name} さん、リーチになったよ？（番号: ${data.lastNumber}）`
-          : `🎉 ${data.name} さん、ビンゴすんね？ ただいま **${data.rank}位** だよ！`;
-      const payload = { content };
-      await postDiscordProxy(payload); await postDiscordDirect(payload);
-    }
-
-    /************** リセット **************/
-    function resetGame(){
-      if(!confirm("ゲームをリセットしますか？（抽選履歴・参加者情報・順位ログ・rankCounter・端末内の保存を初期化）")) return;
-      db.ref("events/event1/participants").set({});
-      db.ref("events/event1/drawnNumbers").set([]);
-      db.ref("bingoLogs").set({});
-      db.ref("rankCounter").set(0);
-      drawnNumbers=[]; updateDrawnNumbersUI();
-      const existing=document.getElementById("detail-card"); if(existing) existing.remove(); openedDetailId=null;
-      localStorage.removeItem(LS_KEYS.id); localStorage.removeItem(LS_KEYS.name); localStorage.removeItem(LS_KEYS.card);
-      myId=null; generateCard(); displayCard();
-    }
-
-    /************** 紙吹雪・スパーク **************/
-    function burstConfetti(n=80){
-      const colors=['#ff6b6b','#ffd93d','#6BCB77','#4D96FF','#b26bff','#ff8fab','#ffa552'];
-      for(let i=0;i<n;i++){
-        const div=document.createElement('div'); div.className='conf';
-        div.style.left = (Math.random()*100)+'vw';
-        div.style.background = colors[(Math.random()*colors.length)|0];
-        div.style.transform = `rotate(${Math.random()*180}deg)`;
-        div.style.setProperty('--dur', (2.4+Math.random()*1.1)+'s');
-        document.body.appendChild(div);
-        setTimeout(()=>div.remove(), 4200);
-      }
-    }
-    function spawnSparks(n=12){
-      for(let i=0;i<n;i++){
-        setTimeout(()=>{
-          const s=document.createElement('div'); s.className='spark';
-          s.style.left=(40+Math.random()*20)+'vw';
-          s.style.top=(35+Math.random()*30)+'vh';
-          document.body.appendChild(s);
-          setTimeout(()=>s.remove(), 1000);
-        }, i*40);
-      }
-    }
-
-    /************** 初期化 **************/
-    (async function init(){
-      const restored = await tryRestore();
-      if(!restored){ generateCard(); displayCard(); }
-      const nm = localStorage.getItem(LS_KEYS.name); if(nm) nameInput.value = nm;
-      setInterval(()=>{ if(cardNumbers?.length===25){ localStorage.setItem(LS_KEYS.card, JSON.stringify(cardNumbers)); } }, 3000);
-    })();
-  </script>
 </body>
 </html>
-
