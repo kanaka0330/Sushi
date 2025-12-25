@@ -162,6 +162,72 @@ h1{ color:#e67cb8; }
 .my-name{
   color:#e67cb8;
 }
+.rank{
+  font-weight:900;
+  color:#ff9800;
+  margin-right:4px;
+}
+/* ===== 順位カラー ===== */
+.rank{
+  font-weight:900;
+  margin-right:6px;
+}
+
+.rank-1{
+  color:#d4af37; /* 金 */
+  text-shadow:0 0 6px rgba(212,175,55,.8);
+}
+
+.rank-2{
+  color:#c0c0c0; /* 銀 */
+}
+
+.rank-3{
+  color:#cd7f32; /* 銅 */
+}
+/* ===== 優勝者オーバーレイ ===== */
+#winner-overlay{
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,.55);
+  display:none;
+  align-items:center;
+  justify-content:center;
+  z-index:10000;
+}
+
+#winner-overlay.show{
+  display:flex;
+}
+
+.winner-box{
+  background:linear-gradient(135deg,#fff4c1,#ffe28a);
+  padding:40px 70px;
+  border-radius:30px;
+  text-align:center;
+  box-shadow:0 20px 60px rgba(0,0,0,.5);
+  animation: winnerPop .9s ease-out;
+}
+
+@keyframes winnerPop{
+  0%{ transform:scale(.3); opacity:0; }
+  70%{ transform:scale(1.1); opacity:1; }
+  100%{ transform:scale(1); }
+}
+
+.winner-rank{
+  font-size:36px;
+  font-weight:900;
+  color:#d4af37;
+  text-shadow:0 0 12px rgba(212,175,55,.9);
+}
+
+.winner-name{
+  margin-top:12px;
+  font-size:48px;
+  font-weight:900;
+  color:#c0392b;
+}
 
 </style>
 </head>
@@ -214,6 +280,8 @@ const playersEl = document.getElementById("players");
 let card = [];
 let drawn = [];
 let cardType = "red";
+let winnerShown = false;
+
 
 /* ===== 自分のカード読み込み ===== */
 db.ref(`events/event1/participants/${userId}`).once("value").then(snap=>{
@@ -269,9 +337,14 @@ function checkStatus(){
   lines.push([4,8,12,16,20].map(i=>marked[i]));
 
   let status="参加中";
-  if(lines.some(l=>l.every(v=>v))) {
+if(lines.some(l=>l.every(v=>v))){
   status = "ビンゴ";
-  playBingoEffect(); // 🎆 追加
+
+  // 🏁 ビンゴ達成時刻を記録（初回のみ）
+  db.ref(`events/event1/participants/${userId}/bingoAt`)
+    .transaction(current => current || Date.now());
+
+  playBingoEffect();
 }
   else if(lines.some(l=>l.filter(v=>v).length===4)) status="リーチ";
 
@@ -284,17 +357,54 @@ db.ref("events/event1/participants").on("value", snap=>{
   const data = snap.val();
   if(!data) return;
 
-  Object.values(data).forEach(p=>{
-    const div = document.createElement("div");
-    div.className="player";
-    div.innerHTML = `
-      <span>${p.icon || "🙂"}</span>
-      <span>${p.name}</span>
-      <span class="status">${p.status}</span>
-    `;
-    playersEl.appendChild(div);
-  });
+// ビンゴ達成者 → 参加中 の順に並べる
+const players = Object.values(data);
+
+// ビンゴ達成者（達成順）
+const bingoPlayers = players
+  .filter(p => p.status === "ビンゴ" && p.bingoAt)
+  .sort((a,b) => a.bingoAt - b.bingoAt);
+
+// その他
+const others = players.filter(p => p.status !== "ビンゴ");
+
+// 結合
+const ordered = [...bingoPlayers, ...others];
+
+ordered.forEach((p, index)=>{
+  const div = document.createElement("div");
+  div.className = "player";
+
+  let rankHtml = "";
+
+  if(p.status === "ビンゴ"){
+    const rank = index + 1;
+
+    if(rank === 1){
+      rankHtml = `<span class="rank rank-1">🥇 1位</span>`;
+      playGoldFanfare();
+      showWinner(p.name); // 👑 ドーン表示
+    }
+    else if(rank === 2){
+      rankHtml = `<span class="rank rank-2">🥈 2位</span>`;
+    }
+    else if(rank === 3){
+      rankHtml = `<span class="rank rank-3">🥉 3位</span>`;
+    }
+    else{
+      rankHtml = `<span class="rank">${rank}位</span>`;
+    }
+  }
+
+  div.innerHTML = `
+    ${rankHtml}
+    <span>${p.icon || "🙂"}</span>
+    <span>${p.name}</span>
+    <span class="status">${p.status}</span>
+  `;
+  playersEl.appendChild(div);
 });
+ });
 /* ===== 抽選処理 ===== */
 function drawNumber(){
   if(drawn.length >= 75){
@@ -356,11 +466,64 @@ function resetDrawn(){
   drawn = [];
   bingoPlayed = false; // ← ビンゴ演出も再度出せるように
 }
+// 抽選リセット時
+db.ref("events/event1/participants").once("value").then(snap=>{
+  snap.forEach(child=>{
+    db.ref(`events/event1/participants/${child.key}/bingoAt`).remove();
+  });
+});
+
+let goldPlayed = false;
+
+function playGoldFanfare(){
+  if(goldPlayed) return;
+  goldPlayed = true;
+
+  const fanfare = document.getElementById("fanfare-gold");
+  fanfare.volume = 0.8;
+  fanfare.currentTime = 0;
+  fanfare.play().catch(()=>{});
+}
+function showWinner(name){
+  if(winnerShown) return;
+  winnerShown = true;
+
+  // 👑 名前表示
+  document.getElementById("winner-name").textContent = name;
+  document.getElementById("winner-overlay").classList.add("show");
+
+  // 🎇 花火倍増
+  const fw = document.getElementById("fireworks");
+  for(let i=0;i<30;i++){   // ← 通常12 → 30
+    const d = document.createElement("div");
+    d.className="firework";
+    d.style.left = Math.random()*100 + "%";
+    d.style.top = Math.random()*60 + "%";
+    d.style.background = `hsl(${Math.random()*360},100%,60%)`;
+    fw.appendChild(d);
+    setTimeout(()=>d.remove(), 1300);
+  }
+
+  // ⏱ 数秒後にフェードアウト
+  setTimeout(()=>{
+    document.getElementById("winner-overlay").classList.remove("show");
+  }, 4500);
+}
+
 </script>
 <!-- 🎆 ビンゴ演出 -->
 <div id="fireworks"></div>
 
-<audio id="bingo-sound" preload="auto"></audio>
+<audio id="fanfare-gold" preload="auto">
+  <source src="fanfare_gold.mp3" type="audio/mpeg">
+</audio>
+<!-- 👑 優勝者表示 -->
+<div id="winner-overlay">
+  <div class="winner-box">
+    <div class="winner-rank">🥇 優勝 🥇</div>
+    <div class="winner-name" id="winner-name">---</div>
+  </div>
+</div>
 
 </body>
 </html>
