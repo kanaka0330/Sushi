@@ -299,6 +299,46 @@
 .icons.shake{
   animation: shake 0.4s;
 }
+/* ===== ビンゴカード種類 ===== */
+.card-type-wrap{
+  margin:18px 0 12px;
+}
+
+.card-type-title{
+  font-weight:700;
+  margin-bottom:10px;
+  color:#ff5f9e;
+}
+
+.card-type{
+  display:inline-block;
+  margin:4px;
+}
+
+.card-type input{
+  display:none;
+}
+
+.chip{
+  display:inline-block;
+  padding:8px 16px;
+  border-radius:999px;
+  background:#fff;
+  border:2px solid #ddd;
+  cursor:pointer;
+  font-weight:700;
+  transition:.2s;
+}
+
+.card-type input:checked + .chip{
+  border-color:#ff6fa7;
+  box-shadow:0 0 0 3px rgba(255,140,180,.35);
+}
+
+/* 色ごとのアクセント */
+.chip.red{ color:#e74c3c; }
+.chip.blue{ color:#3498db; }
+.chip.yellow{ color:#f1c40f; }
 
   </style>
   </head>
@@ -343,18 +383,36 @@
         <div class="icon">🐱</div>
         <div class="icon">🐸</div>
       </div>
-
+      
+    <div>
       <label class="upload-btn">
         📸 写真をえらぶ
         <input type="file" accept="image/*" onchange="previewImage(this)">
       </label>
 
-      <div class="preview" id="preview"></div>
-
-      <button class="submit-btn" onclick="goNext()">参加する</button>
-
     </div>
-  </div>
+<!-- ===== ビンゴカード種類選択 ===== -->
+<div class="card-type-wrap">
+  <p class="card-type-title">📌 ビンゴカードの色</p>
+
+  <label class="card-type">
+    <input type="radio" name="cardType" value="red" checked>
+    <span class="chip red">🔴 赤</span>
+  </label>
+
+  <label class="card-type">
+    <input type="radio" name="cardType" value="blue">
+    <span class="chip blue">🔵 青</span>
+  </label>
+
+  <label class="card-type">
+    <input type="radio" name="cardType" value="yellow">
+    <span class="chip yellow">🟡 黄</span>
+  </label>
+</div>
+
+<div class="preview" id="preview"></div>
+<button class="submit-btn" onclick="goNext()">参加する</button>
 
   <script>
   /* ===== アイコン選択 ===== */
@@ -378,33 +436,69 @@ icons.forEach(icon=>{
 
 
   /* ===== 画像プレビュー ===== */
-  function previewImage(input){
-    const file = input.files[0];
-    if(!file) return;
-    const img = document.createElement("img");
-    img.src = URL.createObjectURL(file);
-    const p = document.getElementById("preview");
-    p.innerHTML="";
-    p.appendChild(img);
+let uploadedImage = "";
+
+function previewImage(input){
+  const file = input.files[0];
+  if(!file) return;
+
+  uploadedImage = URL.createObjectURL(file);
+
+  const img = document.createElement("img");
+  img.src = uploadedImage;
+
+  const p = document.getElementById("preview");
+  p.innerHTML="";
+  p.appendChild(img);
+
+  // アイコン選択を解除
+  icons.forEach(i=>i.classList.remove("selected"));
+  selectedIcon = "";
+}
+/* ===== ビンゴカード生成 ===== */
+function generateBingoCard(){
+  const nums = [];
+  const used = new Set();
+
+  while(nums.length < 25){
+    const n = Math.floor(Math.random() * 75) + 1;
+    if(!used.has(n)){
+      used.add(n);
+      nums.push(n);
+    }
   }
+
+  // 中央をFREEに
+  nums[12] = "FREE";
+  return nums;
+}
+
 
   /* ===== 次へ ===== */
 function goNext(){
+  const cardType = document.querySelector('input[name="cardType"]:checked')?.value;
   const name = document.getElementById("name").value.trim();
-
+  if(!cardType){
+  alert("ビンゴカードの色を選択してください！");
+  return;
+}
   if(!name){
-    alert("お名前を入力してください！");
-    return;
-  }
-
+  alert("お名前を入力してください！");
+  return;
+}
   if(!selectedIcon){
-    alert("アイコンを選択してください！");
+  alert("アイコンを選択してください！");
     document.querySelector(".icons").classList.add("shake");
     setTimeout(()=> {
       document.querySelector(".icons").classList.remove("shake");
     }, 400);
-    return;
-  }
+  return;
+}
+  document.getElementById("name").addEventListener("keydown", e => {
+    if(e.key === "Enter"){
+      goNext();
+    }
+  });
 
   // 🔑 ユーザーIDを作る（1回だけ）
   let userId = localStorage.getItem("bingo_user_id");
@@ -412,14 +506,19 @@ function goNext(){
     userId = db.ref("events/event1/participants").push().key;
     localStorage.setItem("bingo_user_id", userId);
   }
+// 🎴 ビンゴカード生成
+  const bingoCard = generateBingoCard();
 
-  // 🎯 ビンゴカードはここでは空でOK（bingo.htmlで生成）
-  const playerData = {
+  // 🎯 アカウント登録情報
+ const playerData = {
     name: name,
     icon: selectedIcon,
+    cardType: cardType,
+    card: bingoCard,          
     status: "参加中",
     createdAt: Date.now()
   };
+
 
   // 🔥 Firebaseに保存
   db.ref(`events/event1/participants/${userId}`).set(playerData)
@@ -427,6 +526,8 @@ function goNext(){
       // 名前・アイコンもローカル保存（画面復帰用）
       localStorage.setItem("bingo_name", name);
       localStorage.setItem("bingo_icon", selectedIcon);
+      localStorage.setItem("bingo_cardType", cardType);
+
 
       // bingo本体へ
       location.href = "./bingo.html";
@@ -451,13 +552,6 @@ const firebaseConfig = {
 
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
-
-
-
-  </script>
-
-  </body>
-  </html>
-
-
-
+</script>
+</body>
+</html>
