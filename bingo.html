@@ -2,8 +2,8 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>🎀年末ジャンボ ビンゴ大会 🎀</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>🎀 年末ジャンボ ビンゴ大会 🎀</title>
 
 <!-- Firebase -->
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
@@ -16,7 +16,10 @@ body{
   text-align:center;
   padding:20px;
 }
-h1{color:#e67cb8}
+
+h1{ color:#e67cb8; }
+
+/* ===== ビンゴカード ===== */
 #bingo-card{
   display:grid;
   grid-template-columns:repeat(5,60px);
@@ -24,46 +27,171 @@ h1{color:#e67cb8}
   justify-content:center;
   margin:20px auto;
 }
+
 .cell{
-  width:60px;height:60px;line-height:60px;
-  border:2px solid #f8a4c3;
+  width:60px;
+  height:60px;
+  line-height:60px;
   border-radius:10px;
-  background:#fff;
   font-weight:bold;
-}
-.cell.marked{
   background:#fff;
+  border:2px solid #ccc;
+}
+
+.cell.marked{
+  background:#ffebf3;
   color:#e60073;
 }
-button{
-  padding:10px 16px;
+
+/* カード色 */
+.card-red .cell{ border-color:#e74c3c; }
+.card-blue .cell{ border-color:#3498db; }
+.card-yellow .cell{ border-color:#f1c40f; }
+
+/* ===== 抽選表示 ===== */
+.info{
+  margin:12px 0;
+}
+
+/* ===== 参加者一覧 ===== */
+#players{
+  margin-top:20px;
+}
+
+.player{
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  margin:6px;
+  padding:6px 10px;
+  border-radius:999px;
+  background:#fff;
+  box-shadow:0 2px 6px rgba(0,0,0,.15);
+}
+
+.player .status{
+  font-size:12px;
+  opacity:.7;
+}
+/* ===== 抽選ボタン ===== */
+.draw-area{
+  margin:16px 0 10px;
+}
+
+#draw-btn{
+  padding:12px 22px;
+  font-size:16px;
+  font-weight:700;
   border:none;
-  border-radius:8px;
-  background:#f8a4c3;
+  border-radius:999px;
+  background:linear-gradient(135deg,#ff8fb6,#ff5f9e);
   color:#fff;
   cursor:pointer;
+  box-shadow:0 6px 18px rgba(255,120,170,.5);
+  transition:.2s;
 }
+
+#draw-btn:hover{
+  transform:translateY(-2px);
+  box-shadow:0 8px 22px rgba(255,120,170,.7);
+}
+/* ===== 花火 ===== */
+#fireworks{
+  position:fixed;
+  inset:0;
+  pointer-events:none;
+  overflow:hidden;
+  z-index:9999;
+}
+
+.firework{
+  position:absolute;
+  width:10px;
+  height:10px;
+  border-radius:50%;
+  animation: explode 1.2s ease-out forwards;
+}
+
+@keyframes explode{
+  0%{
+    transform:scale(0);
+    opacity:1;
+  }
+  70%{
+    transform:scale(5);
+    opacity:1;
+  }
+  100%{
+    transform:scale(8);
+    opacity:0;
+  }
+}
+#reset-btn{
+  padding:10px 18px;
+  font-size:14px;
+  font-weight:700;
+  border:none;
+  border-radius:999px;
+  background:#bbb;
+  color:#fff;
+  cursor:pointer;
+  box-shadow:0 4px 10px rgba(0,0,0,.2);
+  transition:.2s;
+}
+
+#reset-btn:hover{
+  background:#999;
+}
+/* ===== 自分の情報 ===== */
+.my-info{
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+  margin:10px auto 6px;
+  padding:6px 14px;
+  border-radius:999px;
+  background:#fff;
+  box-shadow:0 4px 12px rgba(0,0,0,.15);
+  font-weight:700;
+}
+
+.my-icon{
+  font-size:22px;
+}
+
+.my-name{
+  color:#e67cb8;
+}
+
 </style>
 </head>
 
 <body>
 
-<h1>🎀年末ジャンボ ビンゴ大会 🎀</h1>
-
-<div>
-  <button onclick="resetGame()">リセット</button>
+<h1>🎀 年末ジャンボ ビンゴ大会 🎀</h1>
+<!-- 👤 自分の情報 -->
+<div id="my-info" class="my-info">
+  <span class="my-icon">🙂</span>
+  <span class="my-name">---</span>
 </div>
 
 <div id="bingo-card"></div>
 
-<div>
-  <button onclick="drawNumber()">番号をひく 🎲</button>
-  <div>最新番号：<span id="last-number">–</span></div>
-  <div>出た番号：<span id="numbers-list">（まだありません）</span></div>
+<div class="draw-area">
+  <button id="draw-btn" onclick="drawNumber()">🎲 番号をひく</button>
+  <br><br>
+  <button id="reset-btn" onclick="resetDrawn()">🔄 抽選をリセット</button>
+</div>
+<div class="info">
+  最新番号：<b id="last-number">–</b><br>
+  出た番号：<span id="numbers-list">（まだありません）</span>
 </div>
 
+<h2>🌸 参加者一覧</h2>
+<div id="players"></div>
+
 <script>
-/* ===== Firebase ===== */
+/* ===== Firebase 初期化 ===== */
 firebase.initializeApp({
   apiKey: "AIzaSyCVofvlR6N837LqdNxRweTq93Uu6qpgbsI",
   authDomain: "sushi-cd085.firebaseapp.com",
@@ -72,72 +200,167 @@ firebase.initializeApp({
 });
 const db = firebase.database();
 
-/* ===== 変数 ===== */
-const SIZE = 5;
-let card = [];
-let drawn = [];
+/* ===== 基本情報 ===== */
+const userId = localStorage.getItem("bingo_user_id");
+if(!userId){
+  alert("参加情報が見つかりません。index.htmlから参加してください。");
+}
 
 const cardEl = document.getElementById("bingo-card");
 const lastEl = document.getElementById("last-number");
 const listEl = document.getElementById("numbers-list");
+const playersEl = document.getElementById("players");
 
-/* ===== カード生成 ===== */
-function generateCard(){
-  const used = new Set();
-  card=[];
-  while(card.length<25){
-    const n = Math.floor(Math.random()*75)+1;
-    if(!used.has(n)){
-      used.add(n);
-      card.push(n);
-    }
+let card = [];
+let drawn = [];
+let cardType = "red";
+
+/* ===== 自分のカード読み込み ===== */
+db.ref(`events/event1/participants/${userId}`).once("value").then(snap=>{
+  const data = snap.val();
+  if(!data || !data.card){
+    alert("カード情報がありません。");
+    return;
   }
-  card[12] = "FREE";
-}
 
+  // 🎴 カード情報
+  card = data.card;
+  cardType = data.cardType || "red";
+  cardEl.className = `card-${cardType}`;
+  renderCard();
+
+  // 👤 自分の表示
+  document.querySelector(".my-icon").textContent = data.icon || "🙂";
+  document.querySelector(".my-name").textContent = data.name;
+});
+
+
+/* ===== カード描画 ===== */
 function renderCard(){
   cardEl.innerHTML="";
   card.forEach(v=>{
-    const d=document.createElement("div");
+    const d = document.createElement("div");
     d.className="cell";
-    d.textContent=v;
+    d.textContent = v;
     if(v==="FREE" || drawn.includes(v)) d.classList.add("marked");
     cardEl.appendChild(d);
   });
 }
 
-/* ===== 抽選 ===== */
-function drawNumber(){
-  if(drawn.length>=75) return;
-  let n;
-  do{
-    n=Math.floor(Math.random()*75)+1;
-  }while(drawn.includes(n));
-
-  db.ref("events/event1/drawnNumbers").set([...drawn,n]);
-}
-
-/* ===== 同期 ===== */
+/* ===== 抽選番号同期 ===== */
 db.ref("events/event1/drawnNumbers").on("value", snap=>{
   drawn = snap.val() || [];
   lastEl.textContent = drawn.at(-1) ?? "–";
   listEl.textContent = drawn.length ? drawn.join("・") : "（まだありません）";
   renderCard();
+  checkStatus();
 });
 
-/* ===== リセット ===== */
-function resetGame(){
-  if(!confirm("リセットしますか？")) return;
-  db.ref("events/event1/drawnNumbers").set([]);
-  drawn=[];
-  generateCard();
-  renderCard();
+/* ===== リーチ／ビンゴ判定 ===== */
+function checkStatus(){
+  if(!card.length) return;
+
+  const marked = card.map(v => v==="FREE" || drawn.includes(v));
+  const lines = [];
+
+  for(let r=0;r<5;r++) lines.push([0,1,2,3,4].map(c=>marked[r*5+c]));
+  for(let c=0;c<5;c++) lines.push([0,1,2,3,4].map(r=>marked[r*5+c]));
+  lines.push([0,6,12,18,24].map(i=>marked[i]));
+  lines.push([4,8,12,16,20].map(i=>marked[i]));
+
+  let status="参加中";
+  if(lines.some(l=>l.every(v=>v))) {
+  status = "ビンゴ";
+  playBingoEffect(); // 🎆 追加
+}
+  else if(lines.some(l=>l.filter(v=>v).length===4)) status="リーチ";
+
+  db.ref(`events/event1/participants/${userId}/status`).set(status);
 }
 
-/* ===== 初期化 ===== */
-generateCard();
-renderCard();
+/* ===== 参加者一覧 ===== */
+db.ref("events/event1/participants").on("value", snap=>{
+  playersEl.innerHTML="";
+  const data = snap.val();
+  if(!data) return;
+
+  Object.values(data).forEach(p=>{
+    const div = document.createElement("div");
+    div.className="player";
+    div.innerHTML = `
+      <span>${p.icon || "🙂"}</span>
+      <span>${p.name}</span>
+      <span class="status">${p.status}</span>
+    `;
+    playersEl.appendChild(div);
+  });
+});
+/* ===== 抽選処理 ===== */
+function drawNumber(){
+  if(drawn.length >= 75){
+    alert("すべての番号が出ました！");
+    return;
+  }
+
+  let n;
+  do{
+    n = Math.floor(Math.random() * 75) + 1;
+  }while(drawn.includes(n));
+
+  // Firebaseに保存（全員に同期される）
+  db.ref("events/event1/drawnNumbers").set([...drawn, n]);
+}
+// 🎵 ビンゴ効果音リスト
+const bingoSounds = [
+  "bingo1.mp3",
+  "bingo2.mp3",
+  "bingo3.mp3"
+];
+
+let bingoPlayed = false;
+
+function playBingoEffect(){
+  if(bingoPlayed) return;
+  bingoPlayed = true;
+
+  // 🔊 効果音（ランダム）
+  const sound = document.getElementById("bingo-sound");
+  const randomSound = bingoSounds[Math.floor(Math.random() * bingoSounds.length)];
+  sound.src = randomSound;
+  sound.volume = 0.6;
+  sound.currentTime = 0;
+  sound.play().catch(()=>{});
+
+  // 🎆 花火
+  const fw = document.getElementById("fireworks");
+
+  for(let i=0;i<12;i++){
+    const d = document.createElement("div");
+    d.className = "firework";
+    d.style.left = Math.random()*100 + "%";
+    d.style.top = Math.random()*60 + "%";
+    d.style.background = `hsl(${Math.random()*360},100%,60%)`;
+    fw.appendChild(d);
+
+    setTimeout(()=>d.remove(), 1300);
+  }
+}
+/* ===== 抽選番号リセット ===== */
+function resetDrawn(){
+  if(!confirm("抽選番号をすべてリセットしますか？")) return;
+
+  // 抽選番号を空に戻す
+  db.ref("events/event1/drawnNumbers").set([]);
+
+  // 自分側の状態も念のため初期化
+  drawn = [];
+  bingoPlayed = false; // ← ビンゴ演出も再度出せるように
+}
 </script>
+<!-- 🎆 ビンゴ演出 -->
+<div id="fireworks"></div>
+
+<audio id="bingo-sound" preload="auto"></audio>
 
 </body>
 </html>
