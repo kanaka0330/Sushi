@@ -520,7 +520,6 @@ if(!userId){
 
 const cardEl = document.getElementById("bingo-card");
 const lastEl = document.getElementById("last-number");
-const listEl = document.getElementById("numbers-list");
 const playersEl = document.getElementById("players");
 
 let card = [];
@@ -574,7 +573,6 @@ function renderCard(){
 db.ref("events/event1/drawnNumbers").on("value", snap=>{
   drawn = snap.val() || [];
   lastEl.textContent = drawn.at(-1) ?? "–";
-  listEl.textContent = drawn.length ? drawn.join("・") : "（まだありません）";
   renderCard();
   checkStatus();
 });
