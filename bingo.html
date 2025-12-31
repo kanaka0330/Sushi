@@ -527,14 +527,19 @@ let drawn = [];
 let cardType = "red";
 let winnerShown = false;
 
+  
+/* ===== 抽選番号同期 ===== */
+db.ref("events/event1/drawnNumbers").on("value", snap=>{
+  drawn = snap.val() || [];
+  lastEl.textContent = drawn.at(-1) ?? "–";
 
-/* ===== 自分のカード読み込み ===== */
-db.ref(`events/event1/participants/${userId}`).once("value").then(snap=>{
-  const data = snap.val();
-  if(!data || !data.card){
-    alert("カード情報がありません。");
-    return;
-  }
+  renderCard();
+  checkStatus();
+
+  // ✅ iPhone Safari 対策（再描画強制）
+  cardEl.offsetHeight;
+});
+
 
   // 🎴 カード情報
   card = data.card;
