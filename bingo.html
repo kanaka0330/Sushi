@@ -38,10 +38,45 @@ h1{ color:#e67cb8; }
   border:2px solid #ccc;
 }
 
-.cell.marked{
-  background:#ffebf3;
+.cell.marked {
+  background: linear-gradient(135deg,#ffd6e7,#fff);
   color:#e60073;
+  box-shadow: inset 0 0 6px rgba(255,105,180,.6);
 }
+/* ===== リーチ演出（ピンク） ===== */
+.cell.reach {
+  animation: reachGlowPink 1.2s infinite;
+}
+
+@keyframes reachGlowPink {
+  0%   { box-shadow: 0 0 0 rgba(255,105,180,0); }
+  50%  { box-shadow: 0 0 18px rgba(255,105,180,.9); }
+  100% { box-shadow: 0 0 0 rgba(255,105,180,0); }
+}
+
+/* ===== ビンゴ列（黄色） ===== */
+.cell.bingo-line {
+  animation: bingoLineGlowYellow 1.2s infinite;
+}
+
+@keyframes bingoLineGlowYellow {
+  0%   { box-shadow: 0 0 6px rgba(255,215,0,.4); }
+  50%  { box-shadow: 0 0 22px rgba(255,215,0,1); }
+  100% { box-shadow: 0 0 6px rgba(255,215,0,.4); }
+}
+
+/* ===== カード全体ビンゴ（黄色） ===== */
+.card-bingo {
+  animation: bingoCardGlowYellow 1.5s infinite;
+  transform: scale(1.03);
+}
+
+@keyframes bingoCardGlowYellow {
+  0%   { box-shadow: 0 0 10px rgba(255,215,0,.6); }
+  50%  { box-shadow: 0 0 32px rgba(255,215,0,1); }
+  100% { box-shadow: 0 0 10px rgba(255,215,0,.6); }
+}
+
 
 /* カード色 */
 .card-red .cell{ border-color:#e74c3c; }
@@ -229,6 +264,112 @@ h1{ color:#e67cb8; }
   color:#c0392b;
 }
 
+.player-icon-img{
+  width:36px;
+  height:36px;
+  border-radius:50%;
+  object-fit:cover;
+  border:2px solid #ff8fb6;
+}
+.player-icon-emoji{
+  font-size:28px;
+}
+.card-viewer{
+  margin:20px auto;
+  padding:16px;
+  background:#fff;
+  border-radius:20px;
+  width:max-content;
+  box-shadow:0 8px 30px rgba(255,120,170,.35);
+}
+
+.card-viewer.hidden{
+  display:none;
+}
+
+.viewer-grid{
+  display:grid;
+  grid-template-columns:repeat(5,48px);
+  gap:6px;
+}
+
+.viewer-cell{
+  width:48px;
+  height:48px;
+  line-height:48px;
+  border-radius:10px;
+  font-weight:bold;
+  background:#fff;
+  border:2px solid #ff8fb6;
+  text-align:center;
+}
+
+.viewer-cell.marked{
+  background:#ffe0ec;
+  color:#e60073;
+}
+/* ===== リーチ演出 ===== */
+.card-reach {
+  animation: reachGlow 1.2s infinite;
+}
+
+@keyframes reachGlow {
+  0% {
+    box-shadow: 0 0 0px rgba(255, 180, 0, 0.0);
+  }
+  50% {
+    box-shadow: 0 0 18px rgba(255, 180, 0, 0.9);
+  }
+  100% {
+    box-shadow: 0 0 0px rgba(255, 180, 0, 0.0);
+  }
+}
+
+
+@keyframes bingoGlow {
+  0% {
+    box-shadow: 0 0 10px rgba(255, 105, 180, 0.6);
+  }
+  50% {
+    box-shadow: 0 0 30px rgba(255, 215, 0, 1);
+  }
+  100% {
+    box-shadow: 0 0 10px rgba(255, 105, 180, 0.6);
+  }
+}
+/* ===== ビンゴ列 ===== */
+.cell.bingo-line {
+  animation: bingoLineGlow 1.2s infinite;
+}
+
+@keyframes bingoLineGlow {
+  0%   { box-shadow: 0 0 6px rgba(255,215,0,.4); }
+  50%  { box-shadow: 0 0 20px rgba(255,215,0,1); }
+  100% { box-shadow: 0 0 6px rgba(255,215,0,.4); }
+}
+
+/* ===== カード全体 ===== */
+.card-bingo {
+  animation: bingoCardGlow 1.5s infinite;
+  transform: scale(1.03);
+}
+
+@keyframes bingoCardGlow {
+  0%   { box-shadow: 0 0 10px rgba(255,105,180,.5); }
+  50%  { box-shadow: 0 0 30px rgba(255,215,0,1); }
+  100% { box-shadow: 0 0 10px rgba(255,105,180,.5); }
+}
+
+
+
+
+
+
+
+
+
+
+
 </style>
 </head>
 
@@ -246,7 +387,7 @@ h1{ color:#e67cb8; }
 <div class="draw-area">
   <button id="draw-btn" onclick="drawNumber()">🎲 番号をひく</button>
   <br><br>
-  <button id="reset-btn" onclick="resetDrawn()">🔄 抽選をリセット</button>
+  <button id="reset-btn" onclick="resetDraw()">🔄 抽選をリセット</button>
 </div>
 <div class="info">
   最新番号：<b id="last-number">–</b><br>
@@ -255,6 +396,8 @@ h1{ color:#e67cb8; }
 
 <h2>🌸 参加者一覧</h2>
 <div id="players"></div>
+<!-- 👇 参加者カード表示エリア -->
+<div id="viewer" class="card-viewer hidden"></div>
 
 <script>
 /* ===== Firebase 初期化 ===== */
@@ -298,8 +441,17 @@ db.ref(`events/event1/participants/${userId}`).once("value").then(snap=>{
   renderCard();
 
   // 👤 自分の表示
-  document.querySelector(".my-icon").textContent = data.icon || "🙂";
-  document.querySelector(".my-name").textContent = data.name;
+// 👤 自分の表示（修正版）
+const myIconEl = document.querySelector(".my-icon");
+const myNameEl = document.querySelector(".my-name");
+
+myNameEl.textContent = data.name;
+
+if(data.iconType === "image"){
+  myIconEl.innerHTML = `<img src="${data.icon}" class="player-icon-img">`;
+}else{
+  myIconEl.textContent = data.icon || "🙂";
+}
 });
 
 
@@ -326,6 +478,13 @@ db.ref("events/event1/drawnNumbers").on("value", snap=>{
 
 /* ===== リーチ／ビンゴ判定 ===== */
 function checkStatus(){
+const myRef = db.ref(`events/event1/participants/${userId}`);
+  // いったん全演出をリセット
+document.querySelectorAll(".cell").forEach(c=>{
+  c.classList.remove("reach", "bingo-line");
+});
+cardEl.classList.remove("card-reach", "card-bingo");
+
   if(!card.length) return;
 
   const marked = card.map(v => v==="FREE" || drawn.includes(v));
@@ -337,18 +496,89 @@ function checkStatus(){
   lines.push([4,8,12,16,20].map(i=>marked[i]));
 
   let status="参加中";
-if(lines.some(l=>l.every(v=>v))){
-  status = "ビンゴ";
+cardEl.classList.remove("card-reach", "card-bingo");
 
-  // 🏁 ビンゴ達成時刻を記録（初回のみ）
-  db.ref(`events/event1/participants/${userId}/bingoAt`)
-    .transaction(current => current || Date.now());
+let bingoLineIndexes = [];
+
+// ビンゴ判定（どのラインか特定）
+lines.forEach((line, idx)=>{
+  if(line.every(v=>v)){
+    if(idx < 5){ // 横
+      bingoLineIndexes.push([0,1,2,3,4].map(c => idx*5 + c));
+    }
+    else if(idx < 10){ // 縦
+      const col = idx - 5;
+      bingoLineIndexes.push([0,1,2,3,4].map(r => r*5 + col));
+    }
+    else if(idx === 10){ // 斜め \
+      bingoLineIndexes.push([0,6,12,18,24]);
+    }
+    else if(idx === 11){ // 斜め /
+      bingoLineIndexes.push([4,8,12,16,20]);
+    }
+  }
+});
+
+if(bingoLineIndexes.length){
+  status = "ビンゴ";
+  cardEl.classList.add("card-bingo");
+
+  bingoLineIndexes.flat().forEach(i=>{
+    cardEl.children[i].classList.add("bingo-line");
+  });
+
+  // 🔥【追加】ビンゴ状態をDBへ保存
+  db.ref(`events/event1/participants/${userId}`).update({
+    status: "ビンゴ",
+    bingoAt: Date.now()
+  });
 
   playBingoEffect();
+  return; // ← リーチ判定を止める（重要）
 }
-  else if(lines.some(l=>l.filter(v=>v).length===4)) status="リーチ";
 
-  db.ref(`events/event1/participants/${userId}/status`).set(status);
+// いったんリーチ演出を全部消す
+document.querySelectorAll(".cell").forEach(c=>{
+  c.classList.remove("reach");
+});
+
+let reachLineIndex = -1;
+
+lines.forEach((line, idx)=>{
+  if(line.filter(v=>v).length === 4 && line.includes(false)){
+    reachLineIndex = idx;
+  }
+});
+
+if(reachLineIndex !== -1){
+  status = "リーチ";
+   db.ref(`events/event1/participants/${userId}`).update({
+    status: "リーチ"
+  });
+
+  // リーチしているラインの index 配列を取得
+  let indexes = [];
+
+  if(reachLineIndex < 5){ // 横
+    indexes = [0,1,2,3,4].map(c => reachLineIndex*5 + c);
+  }
+  else if(reachLineIndex < 10){ // 縦
+    const col = reachLineIndex - 5;
+    indexes = [0,1,2,3,4].map(r => r*5 + col);
+  }
+  else if(reachLineIndex === 10){ // 斜め \
+    indexes = [0,6,12,18,24];
+  }
+  else if(reachLineIndex === 11){ // 斜め /
+    indexes = [4,8,12,16,20];
+  }
+
+  indexes.forEach(i=>{
+    cardEl.children[i].classList.add("reach");
+  });
+}
+
+
 }
 
 /* ===== 参加者一覧 ===== */
@@ -371,7 +601,7 @@ const others = players.filter(p => p.status !== "ビンゴ");
 // 結合
 const ordered = [...bingoPlayers, ...others];
 
-ordered.forEach((p, index)=>{
+Object.entries(data).forEach(([id, p], index)=>{
   const div = document.createElement("div");
   div.className = "player";
 
@@ -396,12 +626,29 @@ ordered.forEach((p, index)=>{
     }
   }
 
-  div.innerHTML = `
-    ${rankHtml}
-    <span>${p.icon || "🙂"}</span>
-    <span>${p.name}</span>
-    <span class="status">${p.status}</span>
-  `;
+let iconHtml = "";
+
+if(p.iconType === "image"){
+  iconHtml = `<img src="${p.icon}" class="player-icon-img">`;
+}else{
+  iconHtml = `<span class="player-icon-emoji">${p.icon || "🙂"}</span>`;
+}
+
+div.innerHTML = `
+  ${rankHtml}
+  ${iconHtml}
+  <span>${p.name}</span>
+  <span class="status">${p.status}</span>
+`;
+
+ div.addEventListener("click", ()=>{
+    togglePlayerCard(p, id); // ← ✅ 正しい userId
+  });
+
+
+
+
+
   playersEl.appendChild(div);
 });
  });
@@ -455,23 +702,37 @@ function playBingoEffect(){
     setTimeout(()=>d.remove(), 1300);
   }
 }
-/* ===== 抽選番号リセット ===== */
-function resetDrawn(){
-  if(!confirm("抽選番号をすべてリセットしますか？")) return;
+function resetDraw(){
+  if(!confirm("抽選・順位・ステータスをすべてリセットします。よろしいですか？")){
+    return;
+  }
 
-  // 抽選番号を空に戻す
-  db.ref("events/event1/drawnNumbers").set([]);
+  const eventRef = db.ref("events/event1");
 
-  // 自分側の状態も念のため初期化
-  drawn = [];
-  bingoPlayed = false; // ← ビンゴ演出も再度出せるように
-}
-// 抽選リセット時
-db.ref("events/event1/participants").once("value").then(snap=>{
-  snap.forEach(child=>{
-    db.ref(`events/event1/participants/${child.key}/bingoAt`).remove();
+  // ① 抽選番号リセット
+  eventRef.child("drawnNumbers").set([]);
+
+  // ② 参加者の status / rank を初期化
+  eventRef.child("participants").once("value").then(snapshot => {
+    const updates = {};
+
+    snapshot.forEach(child => {
+      updates[`${child.key}/status`] = "参加中";
+      updates[`${child.key}/rank`] = null; // rank使ってる場合
+      updates[`${child.key}/bingoAt`] = null; // もし記録してたら
+    });
+
+    eventRef.child("participants").update(updates);
   });
-});
+
+  // ③ クライアント側フラグ初期化（演出用）
+  bingoPlayed = false;
+}
+
+
+
+
+
 
 let goldPlayed = false;
 
@@ -509,6 +770,82 @@ function showWinner(name){
     document.getElementById("winner-overlay").classList.remove("show");
   }, 4500);
 }
+let openedUserId = null;
+const viewer = document.getElementById("viewer");
+
+function togglePlayerCard(player, userId){
+  // 同じ人をもう一度クリック → 閉じる
+  if(openedUserId === userId){
+    viewer.classList.add("hidden");
+    viewer.innerHTML = "";
+    openedUserId = null;
+    return;
+  }
+
+  openedUserId = userId;
+  viewer.innerHTML = "";
+
+  const grid = document.createElement("div");
+  grid.className = "viewer-grid";
+
+  const marked = player.card.map(v =>
+    v === "FREE" || drawn.includes(v)
+  );
+
+  player.card.forEach((v,i)=>{
+    const d = document.createElement("div");
+    d.className = "viewer-cell";
+    d.textContent = v;
+
+    if(marked[i]) d.classList.add("marked");
+    grid.appendChild(d);
+  });
+
+  viewer.appendChild(grid);
+  viewer.classList.remove("hidden");
+}
+
+
+Object.entries(data).forEach(([id, p], index)=>{
+  const div = document.createElement("div");
+  div.className = "player";
+
+  div.addEventListener("click", ()=>{
+    togglePlayerCard(p, id); // ← ✅ 正しい userId
+  });
+
+  playersEl.appendChild(div);
+});
+
+let hasReach = false;
+
+lines.forEach((line) => {
+  if(line.filter(v=>v).length === 4 && line.includes(false)){
+    hasReach = true;
+  }
+});
+if(hasReach){
+  myRef.update({
+    status: "リーチ"
+  });
+} else {
+  // 🔴 リーチでなくなったら参加中に戻す
+  myRef.once("value").then(snap=>{
+    if(snap.val()?.status === "リーチ"){
+      myRef.update({
+        status: "参加中"
+      });
+    }
+  });
+}
+
+
+
+
+
+
+
+
 
 </script>
 <!-- 🎆 ビンゴ演出 -->
