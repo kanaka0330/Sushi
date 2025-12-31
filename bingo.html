@@ -504,6 +504,8 @@ function playCuteConfirm(){
 
 
 /* ===== Firebase 初期化 ===== */
+const myNameEl = document.querySelector(".my-name");
+const myIconEl = document.querySelector(".my-icon");
 firebase.initializeApp({
   apiKey: "AIzaSyCVofvlR6N837LqdNxRweTq93Uu6qpgbsI",
   authDomain: "sushi-cd085.firebaseapp.com",
@@ -528,38 +530,9 @@ let cardType = "red";
 let winnerShown = false;
 
   
-/* ===== 抽選番号同期 ===== */
-db.ref("events/event1/drawnNumbers").on("value", snap=>{
-  drawn = snap.val() || [];
-  lastEl.textContent = drawn.at(-1) ?? "–";
-
-  renderCard();
-  checkStatus();
-
-  // ✅ iPhone Safari 対策（再描画強制）
-  cardEl.offsetHeight;
-});
 
 
-  // 🎴 カード情報
-  card = data.card;
-  cardType = data.cardType || "red";
-  cardEl.className = `card-${cardType}`;
-  renderCard();
 
-  // 👤 自分の表示
-// 👤 自分の表示（修正版）
-const myIconEl = document.querySelector(".my-icon");
-const myNameEl = document.querySelector(".my-name");
-
-myNameEl.textContent = data.name;
-
-if(data.iconType === "image"){
-  myIconEl.innerHTML = `<img src="${data.icon}" class="player-icon-img">`;
-}else{
-  myIconEl.textContent = data.icon || "🙂";
-}
-});
 
 
 /* ===== カード描画 ===== */
@@ -580,6 +553,8 @@ db.ref("events/event1/drawnNumbers").on("value", snap=>{
   lastEl.textContent = drawn.at(-1) ?? "–";
   renderCard();
   checkStatus();
+    // ✅ iPhone Safari 対策（再描画強制）
+  cardEl.offsetHeight;
 });
 
 /* ===== リーチ／ビンゴ判定 ===== */
@@ -692,6 +667,22 @@ db.ref("events/event1/participants").on("value", snap=>{
   playersEl.innerHTML="";
   const data = snap.val();
   if(!data) return;
+
+  // 👇 ここに追加
+  const me = data[userId];
+  if(me){
+    card = me.card;
+    cardType = me.cardType || "red";
+    cardEl.className = `card-${cardType}`;
+    renderCard();
+
+    myNameEl.textContent = me.name;
+    if(me.iconType === "image"){
+      myIconEl.innerHTML = `<img src="${me.icon}" class="player-icon-img">`;
+    }else{
+      myIconEl.textContent = me.icon || "🙂";
+    }
+  }
 
 // ビンゴ達成者 → 参加中 の順に並べる
 const players = Object.values(data);
