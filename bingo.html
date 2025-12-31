@@ -12,10 +12,24 @@
 <style>
 body{
   font-family:'Hiragino Kaku Gothic ProN', sans-serif;
-  background:linear-gradient(135deg,#fff0f6,#e0f7fa);
   text-align:center;
   padding:20px;
+
+  background:
+    linear-gradient(
+      180deg,
+      #fff6e3 0%,
+      #fff3d6 35%,
+      #fff9ec 70%,
+      #ffffff 100%
+    );
 }
+
+
+
+
+
+
 
 h1{ color:#e67cb8; }
 
@@ -359,10 +373,15 @@ h1{ color:#e67cb8; }
   50%  { box-shadow: 0 0 30px rgba(255,215,0,1); }
   100% { box-shadow: 0 0 10px rgba(255,105,180,.5); }
 }
+@keyframes drawRoll {
+  0% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
+  100% { transform: translateY(0); }
+}
 
-
-
-
+#draw-rolling {
+  animation: drawRoll .1s infinite;
+}
 
 
 
@@ -391,7 +410,6 @@ h1{ color:#e67cb8; }
 </div>
 <div class="info">
   最新番号：<b id="last-number">–</b><br>
-  出た番号：<span id="numbers-list">（まだありません）</span>
 </div>
 
 <h2>🌸 参加者一覧</h2>
@@ -400,6 +418,91 @@ h1{ color:#e67cb8; }
 <div id="viewer" class="card-viewer hidden"></div>
 
 <script>
+  /* ===== かわいい効果音（Web Audio API） ===== */
+let audioCtx = null;
+let drumTimer = null;
+
+function ensureAudio(){
+  if(!audioCtx){
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  }
+}
+
+/* 🎀 抽選中：かわいいポコポコ音 */
+function startDrumRoll(){
+  ensureAudio();
+
+  let step = 0;
+  drumTimer = setInterval(()=>{
+    // メイン音（ポコ）
+    const osc1 = audioCtx.createOscillator();
+    const gain1 = audioCtx.createGain();
+
+    osc1.type = "square";
+    osc1.frequency.value = 660 + step % 3 * 110; // ドレミ感
+    gain1.gain.value = 0.08;
+
+    osc1.connect(gain1);
+    gain1.connect(audioCtx.destination);
+
+    osc1.start();
+    osc1.stop(audioCtx.currentTime + 0.06);
+
+    // キラッ音（うっすら）
+    const osc2 = audioCtx.createOscillator();
+    const gain2 = audioCtx.createGain();
+
+    osc2.type = "sine";
+    osc2.frequency.value = 1540; // 高音
+    gain2.gain.value = 0.04;
+
+    osc2.connect(gain2);
+    gain2.connect(audioCtx.destination);
+
+    osc2.start();
+    osc2.stop(audioCtx.currentTime + 0.04);
+
+    step++;
+  }, 120); // ← ゆっくりで可愛い
+}
+
+
+/* 🛑 ドラム停止 */
+function stopDrumRoll(){
+  if(drumTimer){
+    clearInterval(drumTimer);
+    drumTimer = null;
+  }
+}
+
+/* 🎀 確定音（かわいいポワン♪） */
+function playCuteConfirm(){
+  ensureAudio();
+
+  const osc = audioCtx.createOscillator();
+  const gain = audioCtx.createGain();
+
+  osc.type = "sine";          // まるい音
+  osc.frequency.setValueAtTime(880, audioCtx.currentTime);
+  osc.frequency.exponentialRampToValueAtTime(
+    1320,
+    audioCtx.currentTime + 0.15
+  );
+
+  gain.gain.setValueAtTime(0.18, audioCtx.currentTime);
+  gain.gain.exponentialRampToValueAtTime(
+    0.001,
+    audioCtx.currentTime + 0.25
+  );
+
+  osc.connect(gain);
+  gain.connect(audioCtx.destination);
+
+  osc.start();
+  osc.stop(audioCtx.currentTime + 0.25);
+}
+
+
 /* ===== Firebase 初期化 ===== */
 firebase.initializeApp({
   apiKey: "AIzaSyCVofvlR6N837LqdNxRweTq93Uu6qpgbsI",
@@ -653,20 +756,53 @@ div.innerHTML = `
 });
  });
 /* ===== 抽選処理 ===== */
+/* ===== 抽選処理（エフェクト付き） ===== */
 function drawNumber(){
+  const drawBtn = document.getElementById("draw-btn");
+
+  if(drawBtn.disabled) return; // 二重防止
+  drawBtn.disabled = true;
+
   if(drawn.length >= 75){
     alert("すべての番号が出ました！");
+    drawBtn.disabled = false;
     return;
   }
 
-  let n;
-  do{
-    n = Math.floor(Math.random() * 75) + 1;
-  }while(drawn.includes(n));
+  const overlay = document.getElementById("draw-overlay");
+  const rolling = document.getElementById("draw-rolling");
 
-  // Firebaseに保存（全員に同期される）
-  db.ref("events/event1/drawnNumbers").set([...drawn, n]);
+  overlay.style.display = "flex";
+  startDrumRoll();
+
+  const rollTimer = setInterval(()=>{
+    rolling.textContent = Math.floor(Math.random()*75)+1;
+  }, 80);
+
+  setTimeout(()=>{
+    clearInterval(rollTimer);
+    stopDrumRoll();
+
+    let n;
+    do{
+      n = Math.floor(Math.random()*75)+1;
+    }while(drawn.includes(n));
+
+    rolling.textContent = n;
+    playCuteConfirm();
+
+    setTimeout(()=>{
+      // ✅ ここは「必ず実行される」
+      overlay.style.display = "none";
+      drawBtn.disabled = false;
+
+      db.ref("events/event1/drawnNumbers").set([...drawn, n]);
+    }, 600);
+
+  }, 1500);
 }
+
+
 // 🎵 ビンゴ効果音リスト
 const bingoSounds = [
   "bingo1.mp3",
@@ -806,40 +942,6 @@ function togglePlayerCard(player, userId){
 }
 
 
-Object.entries(data).forEach(([id, p], index)=>{
-  const div = document.createElement("div");
-  div.className = "player";
-
-  div.addEventListener("click", ()=>{
-    togglePlayerCard(p, id); // ← ✅ 正しい userId
-  });
-
-  playersEl.appendChild(div);
-});
-
-let hasReach = false;
-
-lines.forEach((line) => {
-  if(line.filter(v=>v).length === 4 && line.includes(false)){
-    hasReach = true;
-  }
-});
-if(hasReach){
-  myRef.update({
-    status: "リーチ"
-  });
-} else {
-  // 🔴 リーチでなくなったら参加中に戻す
-  myRef.once("value").then(snap=>{
-    if(snap.val()?.status === "リーチ"){
-      myRef.update({
-        status: "参加中"
-      });
-    }
-  });
-}
-
-
 
 
 
@@ -848,6 +950,10 @@ if(hasReach){
 
 
 </script>
+
+
+
+
 <!-- 🎆 ビンゴ演出 -->
 <div id="fireworks"></div>
 
@@ -862,5 +968,33 @@ if(hasReach){
   </div>
 </div>
 
+<!-- 🎰 抽選オーバーレイ -->
+<div id="draw-overlay" style="
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,.5);
+  display:none;
+  align-items:center;
+  justify-content:center;
+  z-index:9999;
+">
+  <div style="
+    background:#fff;
+    padding:40px 70px;
+    border-radius:30px;
+    text-align:center;
+    box-shadow:0 20px 60px rgba(0,0,0,.4);
+  ">
+    <div style="font-size:22px;font-weight:700;color:#ff5f9e;">
+      抽選中…
+    </div>
+    <div id="draw-rolling" style="
+      margin-top:12px;
+      font-size:72px;
+      font-weight:900;
+    ">??</div>
+  </div>
+</div>
 </body>
+
 </html>
