@@ -340,6 +340,15 @@
 .chip.blue{ color:#3498db; }
 .chip.yellow{ color:#f1c40f; }
 
+
+/* 装飾レイヤーはクリックを無効化 */
+.background,
+.fireworks,
+.overlay,
+.effect-layer {
+  pointer-events: none;
+}
+
   </style>
   </head>
   <body>
@@ -387,10 +396,15 @@
     <div>
       <label class="upload-btn">
         📸 写真をえらぶ
-        <input type="file" accept="image/*" onchange="previewImage(this)">
+        <input
+         type="file"
+         accept="image/*"
+         onchange="previewImage(this)"
+         >
       </label>
 
     </div>
+    <div class="preview" id="preview"></div>
 <!-- ===== ビンゴカード種類選択 ===== -->
 <div class="card-type-wrap">
   <p class="card-type-title">📌 ビンゴカードの色</p>
@@ -411,13 +425,15 @@
   </label>
 </div>
 
-<div class="preview" id="preview"></div>
+
 <button class="submit-btn" onclick="goNext()">参加する</button>
 
   <script>
-  /* ===== アイコン選択 ===== */
+
+/* ===== アイコン選択 ===== */
 const icons = document.querySelectorAll(".icon");
 let selectedIcon = "";
+let iconType = "emoji"; 
 const selectSound = document.getElementById("selectSound");
 
 icons.forEach(icon=>{
@@ -426,6 +442,8 @@ icons.forEach(icon=>{
     icon.classList.add("selected","pop");
 
     selectedIcon = icon.textContent;
+    iconType = "emoji"; // ← 追加
+    document.getElementById("preview").innerHTML = "";
 
     // 効果音
     selectSound.currentTime = 0;
@@ -438,23 +456,39 @@ icons.forEach(icon=>{
   /* ===== 画像プレビュー ===== */
 let uploadedImage = "";
 
+/* ===== 画像プレビュー（これ1つだけ）===== */
 function previewImage(input){
   const file = input.files[0];
   if(!file) return;
 
-  uploadedImage = URL.createObjectURL(file);
+  const reader = new FileReader();
+  reader.onload = () => {
+    // ★ これが最重要
+    selectedIcon = reader.result;
+    iconType = "image";
 
-  const img = document.createElement("img");
-  img.src = uploadedImage;
+    // 絵文字選択を完全解除
+    icons.forEach(i => i.classList.remove("selected","pop"));
 
-  const p = document.getElementById("preview");
-  p.innerHTML="";
-  p.appendChild(img);
+    // プレビュー表示
+    const preview = document.getElementById("preview");
+    preview.innerHTML = "";
 
-  // アイコン選択を解除
-  icons.forEach(i=>i.classList.remove("selected"));
-  selectedIcon = "";
+    const img = document.createElement("img");
+    img.src = selectedIcon;
+    img.alt = "icon";
+    preview.appendChild(img);
+  };
+
+  reader.readAsDataURL(file);
 }
+
+
+
+
+
+
+
 /* ===== ビンゴカード生成 ===== */
 function generateBingoCard(){
   const nums = [];
@@ -468,68 +502,70 @@ function generateBingoCard(){
     }
   }
 
+
+
+
+
+
   // 中央をFREEに
   nums[12] = "FREE";
   return nums;
 }
 
 
+
+
+
+
+
+
+
+
+
+
+
   /* ===== 次へ ===== */
 function goNext(){
-  const cardType = document.querySelector('input[name="cardType"]:checked')?.value;
   const name = document.getElementById("name").value.trim();
-  if(!cardType){
-  alert("ビンゴカードの色を選択してください！");
-  return;
-}
+  const cardType = document.querySelector('input[name="cardType"]:checked')?.value;
+
   if(!name){
-  alert("お名前を入力してください！");
-  return;
-}
+    alert("お名前を入力してください！");
+    return;
+  }
+
   if(!selectedIcon){
-  alert("アイコンを選択してください！");
+    alert("アイコンまたは写真を選択してください！");
     document.querySelector(".icons").classList.add("shake");
     setTimeout(()=> {
       document.querySelector(".icons").classList.remove("shake");
     }, 400);
-  return;
-}
-  document.getElementById("name").addEventListener("keydown", e => {
-    if(e.key === "Enter"){
-      goNext();
-    }
-  });
+    return;
+  }
 
-  // 🔑 ユーザーIDを作る（1回だけ）
+  // 🔑 ユーザーID
   let userId = localStorage.getItem("bingo_user_id");
   if(!userId){
     userId = db.ref("events/event1/participants").push().key;
     localStorage.setItem("bingo_user_id", userId);
   }
-// 🎴 ビンゴカード生成
+
+  // 🎴 カード生成
   const bingoCard = generateBingoCard();
 
-  // 🎯 アカウント登録情報
- const playerData = {
-    name: name,
+  const playerData = {
+    name,
     icon: selectedIcon,
-    cardType: cardType,
-    card: bingoCard,          
+    iconType,
+    cardType,
+    card: bingoCard,
     status: "参加中",
     createdAt: Date.now()
   };
 
-
-  // 🔥 Firebaseに保存
+  // 🔥 Firebase保存
   db.ref(`events/event1/participants/${userId}`).set(playerData)
     .then(()=>{
-      // 名前・アイコンもローカル保存（画面復帰用）
-      localStorage.setItem("bingo_name", name);
-      localStorage.setItem("bingo_icon", selectedIcon);
-      localStorage.setItem("bingo_cardType", cardType);
-
-
-      // bingo本体へ
       location.href = "./bingo.html";
     })
     .catch(err=>{
@@ -539,6 +575,11 @@ function goNext(){
 }
 
 
+document.getElementById("name").addEventListener("keydown", e => {
+  if(e.key === "Enter"){
+    goNext();
+  }
+});
 
 const firebaseConfig = {
   apiKey: "AIzaSyCVofvlR6N837LqdNxRweTq93Uu6qpgbsI",
@@ -552,6 +593,7 @@ const firebaseConfig = {
 
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
+
 </script>
 </body>
 </html>
